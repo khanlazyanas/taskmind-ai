@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2 } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
 
 interface Task {
@@ -20,6 +20,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 1. Fetch Tasks API
   const fetchTasks = async () => {
     try {
       const res = await fetch("/api/tasks");
@@ -36,33 +37,43 @@ export default function Home() {
     fetchTasks();
   }, []);
 
-  // NAYA FUNCTION: Task ka status update karne ke liye
+  // 2. Update Task Status API (Todo -> In Progress -> Done)
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
-    // 1. Optimistic UI Update (Turant UI change karne ke liye bina lag ke)
+    // UI ko turant update karo (Optimistic UI)
     setTasks((prev) =>
       prev.map((task) =>
         task._id === taskId ? { ...task, status: newStatus } : task
       )
     );
 
-    // 2. Database mein update bhejna
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-
-      if (!res.ok) {
-        // Agar fail hua toh wapas purana data fetch kar lo
-        fetchTasks();
-      }
+      if (!res.ok) fetchTasks(); // Agar fail hua toh database se wapas fetch kar lo
     } catch (error) {
       console.error("Error updating status:", error);
       fetchTasks();
     }
   };
 
+  // 3. Delete Task API
+  const deleteTask = async (taskId: string) => {
+    // UI se turant hata do
+    setTasks((prev) => prev.filter((task) => task._id !== taskId));
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (!res.ok) fetchTasks();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      fetchTasks();
+    }
+  };
+
+  // Columns ke liye tasks filter karo
   const todoTasks = tasks.filter((t) => t.status === "TODO");
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = tasks.filter((t) => t.status === "DONE");
@@ -95,7 +106,8 @@ export default function Home() {
             <p className="text-zinc-500 font-medium ml-[3.25rem]">Intelligent workspace and automated workflow routing.</p>
           </div>
           
-          <CreateTaskModal />
+          {/* NAYA: onSuccess prop pass kiya jisse modal save hone par page refresh ho */}
+          <CreateTaskModal onSuccess={fetchTasks} />
         </div>
 
         {isLoading ? (
@@ -126,7 +138,7 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      {/* Action Button: Move to In Progress */}
+                      {/* MOVE TO IN-PROGRESS BUTTON */}
                       <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors shadow-sm" title="Start Task">
                         <ArrowRight className="w-4 h-4" />
                       </button>
@@ -179,11 +191,12 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      {/* Action Buttons: Move Back or Complete */}
                       <div className="flex gap-2">
+                        {/* MOVE BACK TO TODO BUTTON */}
                         <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-50 hover:bg-zinc-100 p-2 rounded-xl transition-colors shadow-sm" title="Move Back">
                           <ArrowLeft className="w-4 h-4" />
                         </button>
+                        {/* COMPLETE TASK BUTTON */}
                         <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 p-2 rounded-xl transition-colors shadow-sm" title="Complete Task">
                           <CheckCircle className="w-4 h-4" />
                         </button>
@@ -230,10 +243,16 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      {/* Action Button: Reopen Task */}
-                      <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 p-2 rounded-xl transition-colors" title="Reopen Task">
-                        <ArrowLeft className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        {/* REOPEN TASK BUTTON */}
+                        <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 p-2 rounded-xl transition-colors" title="Reopen Task">
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        {/* DELETE TASK BUTTON */}
+                        <button onClick={() => deleteTask(task._id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-xl transition-colors" title="Delete Task">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-zinc-500 line-through leading-snug mb-2">
