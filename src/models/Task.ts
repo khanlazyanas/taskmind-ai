@@ -37,7 +37,7 @@ const TaskSchema: Schema = new Schema(
       default: [] 
     },
   },
-  { timestamps: true } // Ye automatically createdAt aur updatedAt add kar dega
+  { timestamps: true }
 );
 
 // Next.js hot-reload ke time error se bachne ke liye ye check zaroori hai
