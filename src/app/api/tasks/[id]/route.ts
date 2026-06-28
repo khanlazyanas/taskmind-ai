@@ -5,19 +5,21 @@ import Task from "@/models/Task";
 // PATCH API: Kisi specific task ka status update karne ke liye
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Yahan Promise add kiya
 ) {
   try {
     const body = await request.json();
     const { status } = body;
+    
+    // NAYA RULE: Next.js latest version mein params ko await karna padta hai
+    const { id } = await params; 
 
     await connectToDatabase();
 
-    // Database mein task find karke uska status update karo
     const updatedTask = await Task.findByIdAndUpdate(
-      params.id,
+      id,
       { status },
-      { new: true } // Ye ensure karta hai ki updated data return ho
+      { new: true }
     );
 
     if (!updatedTask) {
@@ -30,3 +32,27 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
   }
 }
+
+// DELETE API: Task ko hamesha ke liye database se udane ke liye
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> } // Yahan Promise add kiya
+) {
+  try {
+    // NAYA RULE: Params ko await karo
+    const { id } = await params;
+
+    await connectToDatabase();
+    
+    const deletedTask = await Task.findByIdAndDelete(id);
+    
+    if (!deletedTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+  }
+} 
