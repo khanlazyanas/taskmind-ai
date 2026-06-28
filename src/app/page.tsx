@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Plus, MoreHorizontal, Clock, Bot, LayoutGrid } from "lucide-react";
+import { Sparkles, MoreHorizontal, Clock, Bot, LayoutGrid } from "lucide-react";
+import CreateTaskModal from "@/components/CreateTaskModal";
 
 export default function Home() {
   return (
@@ -23,9 +23,10 @@ export default function Home() {
             </div>
             <p className="text-zinc-500 font-medium ml-[3.25rem]">Intelligent workspace and automated workflow routing.</p>
           </div>
-          <Button className="rounded-full px-6 py-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-zinc-950 text-white hover:bg-zinc-800 hover:-translate-y-0.5">
-            <Plus className="w-5 h-5 mr-2" /> New Initiative
-          </Button>
+          
+          {/* YAHAN CHANGE HUA HAI: Purana Button hatakar humara naya Modal component laga diya */}
+          <CreateTaskModal />
+
         </div>
 
         {/* Premium Kanban Board Layout */}
