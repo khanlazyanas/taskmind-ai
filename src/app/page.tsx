@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, MoreHorizontal, Clock, Bot, LayoutGrid, Loader2 } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
 
-// TypeScript interface task ke liye
 interface Task {
   _id: string;
   title: string;
@@ -21,7 +20,6 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // API se tasks fetch karne ka function
   const fetchTasks = async () => {
     try {
       const res = await fetch("/api/tasks");
@@ -34,17 +32,41 @@ export default function Home() {
     }
   };
 
-  // Component load hote hi tasks fetch honge
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  // Tasks ko status ke hisaab se alag-alag columns mein filter karna
+  // NAYA FUNCTION: Task ka status update karne ke liye
+  const updateTaskStatus = async (taskId: string, newStatus: string) => {
+    // 1. Optimistic UI Update (Turant UI change karne ke liye bina lag ke)
+    setTasks((prev) =>
+      prev.map((task) =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+
+    // 2. Database mein update bhejna
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        // Agar fail hua toh wapas purana data fetch kar lo
+        fetchTasks();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      fetchTasks();
+    }
+  };
+
   const todoTasks = tasks.filter((t) => t.status === "TODO");
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = tasks.filter((t) => t.status === "DONE");
 
-  // Priority ke hisaab se color set karne ka helper function
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "HIGH": return "bg-red-50 text-red-600 ring-red-200";
@@ -82,7 +104,6 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Kanban Board Layout */}
             
             {/* TODO Column */}
             <div className="flex flex-col gap-5">
@@ -95,7 +116,7 @@ export default function Home() {
               </div>
               
               {todoTasks.map((task) => (
-                <Card key={task._id} className="group bg-white rounded-3xl border border-zinc-200/80 shadow-sm hover:shadow-xl hover:border-zinc-300 transition-all duration-300 cursor-grab hover:-translate-y-1">
+                <Card key={task._id} className="group bg-white rounded-3xl border border-zinc-200/80 shadow-sm hover:shadow-xl hover:border-zinc-300 transition-all duration-300">
                   <CardContent className="p-6 space-y-5">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-2 flex-wrap">
@@ -105,8 +126,9 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      <button className="text-zinc-400 hover:text-zinc-900 transition-colors p-1 rounded-md hover:bg-zinc-100">
-                        <MoreHorizontal className="w-5 h-5" />
+                      {/* Action Button: Move to In Progress */}
+                      <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors shadow-sm" title="Start Task">
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                     <div>
@@ -134,12 +156,6 @@ export default function Home() {
                   </CardContent>
                 </Card>
               ))}
-              
-              {todoTasks.length === 0 && (
-                 <div className="h-40 border-2 border-dashed border-zinc-200 rounded-3xl flex items-center justify-center bg-zinc-50/50">
-                    <p className="text-sm font-semibold text-zinc-400">No tasks here</p>
-                 </div>
-              )}
             </div>
 
             {/* IN PROGRESS Column */}
@@ -152,11 +168,45 @@ export default function Home() {
                 <Badge variant="outline" className="text-xs font-mono rounded-full bg-blue-50 text-blue-700 border-blue-200 shadow-sm">{inProgressTasks.length}</Badge>
               </div>
               
-              {inProgressTasks.length === 0 && (
-                <div className="h-40 border-2 border-dashed border-zinc-200 rounded-3xl flex flex-col items-center justify-center bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
-                  <p className="text-sm font-semibold text-zinc-400">Drag tasks here</p>
-                </div>
-              )}
+              {inProgressTasks.map((task) => (
+                <Card key={task._id} className="group bg-white rounded-3xl border border-blue-200/80 shadow-sm hover:shadow-md transition-all duration-300">
+                  <CardContent className="p-6 space-y-5">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-2 flex-wrap">
+                        {task.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200 font-semibold rounded-lg px-2.5 py-1">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      {/* Action Buttons: Move Back or Complete */}
+                      <div className="flex gap-2">
+                        <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-50 hover:bg-zinc-100 p-2 rounded-xl transition-colors shadow-sm" title="Move Back">
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 p-2 rounded-xl transition-colors shadow-sm" title="Complete Task">
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors">
+                        {task.title}
+                      </h3>
+                      <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
+                        {task.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between pt-5 border-t border-zinc-100 mt-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ring-1 ${getPriorityColor(task.priority)}`}>
+                          {task.priority.charAt(0)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             {/* DONE Column */}
@@ -169,11 +219,30 @@ export default function Home() {
                 <Badge variant="outline" className="text-xs font-mono rounded-full bg-green-50 text-green-700 border-green-200 shadow-sm">{doneTasks.length}</Badge>
               </div>
               
-              {doneTasks.length === 0 && (
-                <div className="h-40 border-2 border-dashed border-zinc-200 rounded-3xl flex items-center justify-center bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
-                  <p className="text-sm font-semibold text-zinc-400">Drag tasks here</p>
-                </div>
-              )}
+              {doneTasks.map((task) => (
+                <Card key={task._id} className="group bg-zinc-50/50 rounded-3xl border border-green-200/50 shadow-none opacity-80 hover:opacity-100 transition-all duration-300">
+                  <CardContent className="p-6 space-y-5">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-2 flex-wrap">
+                        {task.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="outline" className="bg-zinc-100 text-zinc-500 border-zinc-200 font-semibold rounded-lg px-2.5 py-1">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      {/* Action Button: Reopen Task */}
+                      <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 p-2 rounded-xl transition-colors" title="Reopen Task">
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-zinc-500 line-through leading-snug mb-2">
+                        {task.title}
+                      </h3>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
           </div>
