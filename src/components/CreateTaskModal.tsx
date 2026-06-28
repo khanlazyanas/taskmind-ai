@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 
-export default function CreateTaskModal() {
+// NAYA: TypeScript interface define kiya jisme onSuccess ko allow kiya hai
+interface CreateTaskModalProps {
+  onSuccess: () => void | Promise<void>;
+}
+
+export default function CreateTaskModal({ onSuccess }: CreateTaskModalProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -30,7 +35,6 @@ export default function CreateTaskModal() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Abhi status aur priority default jayenge (TODO aur MEDIUM)
         body: JSON.stringify({ title, description }),
       });
 
@@ -38,8 +42,7 @@ export default function CreateTaskModal() {
         setOpen(false);
         setTitle("");
         setDescription("");
-        // Aage chalkar yahan hum dashboard ko refresh karne ka logic dalenge
-        alert("Task Saved to Database!"); 
+        await onSuccess(); // Naya task banne ke baad dashboard refresh hoga
       }
     } catch (error) {
       console.error("Failed to create task", error);
