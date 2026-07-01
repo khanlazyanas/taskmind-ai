@@ -71,23 +71,27 @@ export default function Home() {
     }
   };
 
-  // --- DRAG AND DROP LOGIC ---
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData("taskId", taskId);
+  // --- DRAG AND DROP LOGIC (FIXED) ---
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
+    // FIX: Browser standard "text/plain" format use karna zaroori hai
+    e.dataTransfer.setData("text/plain", taskId);
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, newStatus: string) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, newStatus: string) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData("taskId");
+    // FIX: Same "text/plain" format se data nikalna hai
+    const taskId = e.dataTransfer.getData("text/plain");
     if (taskId) {
       updateTaskStatus(taskId, newStatus);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); 
+    e.dataTransfer.dropEffect = "move"; // Drop zone ko active banata hai
   };
-  // ---------------------------
+  // -----------------------------------
 
   const todoTasks = tasks.filter((t) => t.status === "TODO");
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
@@ -141,11 +145,11 @@ export default function Home() {
             
             {/* TODO Column Drop Zone */}
             <div 
-              className="flex flex-col gap-5 bg-zinc-50/50 p-4 rounded-[2rem] border border-zinc-100/80 shadow-sm transition-colors hover:bg-zinc-50"
+              className="flex flex-col gap-5 bg-zinc-50/50 p-4 rounded-[2rem] border border-zinc-100/80 shadow-sm transition-colors hover:bg-zinc-50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "TODO")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-zinc-100">
+              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-zinc-100 pointer-events-none">
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 bg-white rounded-lg shadow-sm border border-zinc-200/60">
                     <LayoutGrid className="w-4 h-4 text-zinc-500" />
@@ -163,8 +167,8 @@ export default function Home() {
                     onDragStart={(e) => handleDragStart(e, task._id)}
                     className="group bg-white rounded-3xl border-0 ring-1 ring-zinc-200/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                   >
-                    <CardContent className="p-6 space-y-5">
-                      <div className="flex justify-between items-start">
+                    <CardContent className="p-6 space-y-5 pointer-events-none">
+                      <div className="flex justify-between items-start pointer-events-auto">
                         <div className="flex gap-2 flex-wrap">
                           {task.tags.map((tag, idx) => (
                             <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
@@ -176,7 +180,7 @@ export default function Home() {
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
-                      <div>
+                      <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
                           {task.title}
                         </h3>
@@ -184,7 +188,7 @@ export default function Home() {
                           {task.description}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2">
+                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
                         <div className="flex items-center gap-3">
                           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
                             {task.priority.charAt(0)}
@@ -206,11 +210,11 @@ export default function Home() {
 
             {/* IN PROGRESS Column Drop Zone */}
             <div 
-              className="flex flex-col gap-5 bg-blue-50/30 p-4 rounded-[2rem] border border-blue-100/50 shadow-sm transition-colors hover:bg-blue-50/50"
+              className="flex flex-col gap-5 bg-blue-50/30 p-4 rounded-[2rem] border border-blue-100/50 shadow-sm transition-colors hover:bg-blue-50/50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "IN_PROGRESS")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-blue-100">
+              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-blue-100 pointer-events-none">
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 bg-white rounded-lg shadow-sm border border-blue-200/60 flex items-center justify-center">
                     <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
@@ -228,8 +232,8 @@ export default function Home() {
                     onDragStart={(e) => handleDragStart(e, task._id)}
                     className="group bg-white rounded-3xl border-0 ring-1 ring-blue-200/60 shadow-[0_2px_10px_rgb(59,130,246,0.04)] hover:shadow-[0_20px_40px_rgb(59,130,246,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                   >
-                    <CardContent className="p-6 space-y-5">
-                      <div className="flex justify-between items-start">
+                    <CardContent className="p-6 space-y-5 pointer-events-none">
+                      <div className="flex justify-between items-start pointer-events-auto">
                         <div className="flex gap-2 flex-wrap">
                           {task.tags.map((tag, idx) => (
                             <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
@@ -246,7 +250,7 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
-                      <div>
+                      <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
                           {task.title}
                         </h3>
@@ -254,7 +258,7 @@ export default function Home() {
                           {task.description}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2">
+                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
                         <div className="flex items-center gap-3">
                           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
                             {task.priority.charAt(0)}
@@ -269,11 +273,11 @@ export default function Home() {
 
             {/* DONE Column Drop Zone */}
             <div 
-              className="flex flex-col gap-5 bg-green-50/30 p-4 rounded-[2rem] border border-green-100/50 shadow-sm transition-colors hover:bg-green-50/50"
+              className="flex flex-col gap-5 bg-green-50/30 p-4 rounded-[2rem] border border-green-100/50 shadow-sm transition-colors hover:bg-green-50/50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "DONE")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-green-100">
+              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-green-100 pointer-events-none">
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 bg-white rounded-lg shadow-sm border border-green-200/60 flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-green-600" />
@@ -291,8 +295,8 @@ export default function Home() {
                     onDragStart={(e) => handleDragStart(e, task._id)}
                     className="group bg-white/60 rounded-3xl border-0 ring-1 ring-green-200/50 shadow-sm opacity-80 hover:opacity-100 hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                   >
-                    <CardContent className="p-6 space-y-5">
-                      <div className="flex justify-between items-start">
+                    <CardContent className="p-6 space-y-5 pointer-events-none">
+                      <div className="flex justify-between items-start pointer-events-auto">
                         <div className="flex gap-2 flex-wrap opacity-60 group-hover:opacity-100 transition-opacity">
                           {task.tags.map((tag, idx) => (
                             <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
@@ -309,7 +313,7 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
-                      <div>
+                      <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-500 line-through leading-snug mb-2 group-hover:text-zinc-700 transition-colors">
                           {task.title}
                         </h3>
