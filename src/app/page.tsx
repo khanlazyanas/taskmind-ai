@@ -73,14 +73,12 @@ export default function Home() {
 
   // --- DRAG AND DROP LOGIC (FIXED) ---
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
-    // FIX: Browser standard "text/plain" format use karna zaroori hai
     e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, newStatus: string) => {
     e.preventDefault();
-    // FIX: Same "text/plain" format se data nikalna hai
     const taskId = e.dataTransfer.getData("text/plain");
     if (taskId) {
       updateTaskStatus(taskId, newStatus);
@@ -89,7 +87,7 @@ export default function Home() {
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); 
-    e.dataTransfer.dropEffect = "move"; // Drop zone ko active banata hai
+    e.dataTransfer.dropEffect = "move";
   };
   // -----------------------------------
 
@@ -297,14 +295,17 @@ export default function Home() {
                   >
                     <CardContent className="p-6 space-y-5 pointer-events-none">
                       <div className="flex justify-between items-start pointer-events-auto">
-                        <div className="flex gap-2 flex-wrap opacity-60 group-hover:opacity-100 transition-opacity">
+                        {/* FIX: Tags ab hamesha dikhenge mobile par */}
+                        <div className="flex gap-2 flex-wrap opacity-100 lg:opacity-60 lg:group-hover:opacity-100 transition-opacity">
                           {task.tags.map((tag, idx) => (
                             <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
                               {tag}
                             </Badge>
                           ))}
                         </div>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                        
+                        {/* FIX: Mobile par button hamesha dikhega (opacity-100), desktop par hover par (lg:opacity-0) */}
+                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
                           <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Reopen Task">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
