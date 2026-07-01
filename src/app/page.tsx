@@ -37,9 +37,8 @@ export default function Home() {
     fetchTasks();
   }, []);
 
-  // 2. Update Task Status API (Todo -> In Progress -> Done)
+  // 2. Update Task Status API
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
-    // UI ko turant update karo (Optimistic UI)
     setTasks((prev) =>
       prev.map((task) =>
         task._id === taskId ? { ...task, status: newStatus } : task
@@ -52,7 +51,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) fetchTasks(); // Agar fail hua toh database se wapas fetch kar lo
+      if (!res.ok) fetchTasks();
     } catch (error) {
       console.error("Error updating status:", error);
       fetchTasks();
@@ -61,9 +60,7 @@ export default function Home() {
 
   // 3. Delete Task API
   const deleteTask = async (taskId: string) => {
-    // UI se turant hata do
     setTasks((prev) => prev.filter((task) => task._id !== taskId));
-
     try {
       const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
       if (!res.ok) fetchTasks();
@@ -73,7 +70,24 @@ export default function Home() {
     }
   };
 
-  // Columns ke liye tasks filter karo
+  // --- DRAG AND DROP LOGIC ---
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData("taskId", taskId);
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("taskId");
+    if (taskId) {
+      updateTaskStatus(taskId, newStatus);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Drop allow karne ke liye ye zaroori hai
+  };
+  // ---------------------------
+
   const todoTasks = tasks.filter((t) => t.status === "TODO");
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = tasks.filter((t) => t.status === "DONE");
@@ -105,8 +119,6 @@ export default function Home() {
             </div>
             <p className="text-zinc-500 font-medium ml-[3.25rem]">Intelligent workspace and automated workflow routing.</p>
           </div>
-          
-          {/* NAYA: onSuccess prop pass kiya jisse modal save hone par page refresh ho */}
           <CreateTaskModal onSuccess={fetchTasks} />
         </div>
 
@@ -117,9 +129,13 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* TODO Column */}
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between pb-3 border-b-2 border-zinc-100">
+            {/* TODO Column Drop Zone */}
+            <div 
+              className="flex flex-col gap-5 p-2 -m-2 rounded-2xl transition-colors hover:bg-zinc-50/50"
+              onDrop={(e) => handleDrop(e, "TODO")}
+              onDragOver={handleDragOver}
+            >
+              <div className="flex items-center justify-between pb-3 border-b-2 border-zinc-100 px-2">
                 <div className="flex items-center gap-2">
                   <LayoutGrid className="w-4 h-4 text-zinc-400" />
                   <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-600">To Do</h2>
@@ -128,7 +144,12 @@ export default function Home() {
               </div>
               
               {todoTasks.map((task) => (
-                <Card key={task._id} className="group bg-white rounded-3xl border border-zinc-200/80 shadow-sm hover:shadow-xl hover:border-zinc-300 transition-all duration-300">
+                <Card 
+                  key={task._id} 
+                  draggable 
+                  onDragStart={(e) => handleDragStart(e, task._id)}
+                  className="group bg-white rounded-3xl border border-zinc-200/80 shadow-sm hover:shadow-xl hover:border-zinc-300 transition-all duration-300 cursor-grab active:cursor-grabbing"
+                >
                   <CardContent className="p-6 space-y-5">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-2 flex-wrap">
@@ -138,8 +159,7 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      {/* MOVE TO IN-PROGRESS BUTTON */}
-                      <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors shadow-sm" title="Start Task">
+                      <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors shadow-sm md:hidden" title="Start Task">
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -170,9 +190,13 @@ export default function Home() {
               ))}
             </div>
 
-            {/* IN PROGRESS Column */}
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between pb-3 border-b-2 border-blue-100">
+            {/* IN PROGRESS Column Drop Zone */}
+            <div 
+              className="flex flex-col gap-5 p-2 -m-2 rounded-2xl transition-colors hover:bg-blue-50/30"
+              onDrop={(e) => handleDrop(e, "IN_PROGRESS")}
+              onDragOver={handleDragOver}
+            >
+              <div className="flex items-center justify-between pb-3 border-b-2 border-blue-100 px-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   <h2 className="text-sm font-bold uppercase tracking-widest text-blue-600">In Progress</h2>
@@ -181,7 +205,12 @@ export default function Home() {
               </div>
               
               {inProgressTasks.map((task) => (
-                <Card key={task._id} className="group bg-white rounded-3xl border border-blue-200/80 shadow-sm hover:shadow-md transition-all duration-300">
+                <Card 
+                  key={task._id}
+                  draggable 
+                  onDragStart={(e) => handleDragStart(e, task._id)}
+                  className="group bg-white rounded-3xl border border-blue-200/80 shadow-sm hover:shadow-md transition-all duration-300 cursor-grab active:cursor-grabbing"
+                >
                   <CardContent className="p-6 space-y-5">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-2 flex-wrap">
@@ -191,13 +220,11 @@ export default function Home() {
                           </Badge>
                         ))}
                       </div>
-                      <div className="flex gap-2">
-                        {/* MOVE BACK TO TODO BUTTON */}
-                        <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-50 hover:bg-zinc-100 p-2 rounded-xl transition-colors shadow-sm" title="Move Back">
+                      <div className="flex gap-2 md:hidden">
+                        <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-50 hover:bg-zinc-100 p-2 rounded-xl transition-colors shadow-sm">
                           <ArrowLeft className="w-4 h-4" />
                         </button>
-                        {/* COMPLETE TASK BUTTON */}
-                        <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 p-2 rounded-xl transition-colors shadow-sm" title="Complete Task">
+                        <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 p-2 rounded-xl transition-colors shadow-sm">
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       </div>
@@ -222,9 +249,13 @@ export default function Home() {
               ))}
             </div>
 
-            {/* DONE Column */}
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between pb-3 border-b-2 border-green-100">
+            {/* DONE Column Drop Zone */}
+            <div 
+              className="flex flex-col gap-5 p-2 -m-2 rounded-2xl transition-colors hover:bg-green-50/30"
+              onDrop={(e) => handleDrop(e, "DONE")}
+              onDragOver={handleDragOver}
+            >
+              <div className="flex items-center justify-between pb-3 border-b-2 border-green-100 px-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
                   <h2 className="text-sm font-bold uppercase tracking-widest text-green-600">Completed</h2>
@@ -233,7 +264,12 @@ export default function Home() {
               </div>
               
               {doneTasks.map((task) => (
-                <Card key={task._id} className="group bg-zinc-50/50 rounded-3xl border border-green-200/50 shadow-none opacity-80 hover:opacity-100 transition-all duration-300">
+                <Card 
+                  key={task._id}
+                  draggable 
+                  onDragStart={(e) => handleDragStart(e, task._id)}
+                  className="group bg-zinc-50/50 rounded-3xl border border-green-200/50 shadow-none opacity-80 hover:opacity-100 transition-all duration-300 cursor-grab active:cursor-grabbing"
+                >
                   <CardContent className="p-6 space-y-5">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-2 flex-wrap">
@@ -244,12 +280,7 @@ export default function Home() {
                         ))}
                       </div>
                       <div className="flex gap-2">
-                        {/* REOPEN TASK BUTTON */}
-                        <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-zinc-400 hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 p-2 rounded-xl transition-colors" title="Reopen Task">
-                          <ArrowLeft className="w-4 h-4" />
-                        </button>
-                        {/* DELETE TASK BUTTON */}
-                        <button onClick={() => deleteTask(task._id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-xl transition-colors" title="Delete Task">
+                        <button onClick={() => deleteTask(task._id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-xl transition-colors z-10" title="Delete Task">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
