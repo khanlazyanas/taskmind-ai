@@ -1,58 +1,43 @@
 import { NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
+import dbConnect from "@/lib/mongodb";
 import Task from "@/models/Task";
+import { auth } from "@clerk/nextjs/server";
 
-// PATCH API: Kisi specific task ka status update karne ke liye
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> } // Yahan Promise add kiya
-) {
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const body = await request.json();
-    const { status } = body;
+    const { userId } = await auth(); // <-- NAYA: Yahan 'await' lagana zaroori hai
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+
+    await dbConnect();
+    const body = await req.json();
     
-    // NAYA RULE: Next.js latest version mein params ko await karna padta hai
-    const { id } = await params; 
-
-    await connectToDatabase();
-
-    const updatedTask = await Task.findByIdAndUpdate(
-      id,
-      { status },
+    // Find karte waqt _id ke sath userId bhi match hona chahiye
+    const updatedTask = await Task.findOneAndUpdate(
+      { _id: params.id, userId }, 
+      { status: body.status },
       { new: true }
     );
 
-    if (!updatedTask) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedTask, { status: 200 });
+    if (!updatedTask) return new NextResponse("Not Found", { status: 404 });
+    return NextResponse.json(updatedTask);
   } catch (error) {
-    console.error("Error updating task status:", error);
-    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
+    return new NextResponse("Error updating task", { status: 500 });
   }
 }
 
-// DELETE API: Task ko hamesha ke liye database se udane ke liye
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> } // Yahan Promise add kiya
-) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    // NAYA RULE: Params ko await karo
-    const { id } = await params;
+    const { userId } = await auth(); // <-- NAYA: Yahan bhi 'await' lagana hai
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    await connectToDatabase();
+    await dbConnect();
     
-    const deletedTask = await Task.findByIdAndDelete(id);
-    
-    if (!deletedTask) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
+    // Sirf wahi task delete hoga jo logged-in user ka hai
+    const deletedTask = await Task.findOneAndDelete({ _id: params.id, userId });
 
-    return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });
+    if (!deletedTask) return new NextResponse("Not Found", { status: 404 });
+    return new NextResponse("Task deleted", { status: 200 });
   } catch (error) {
-    console.error("Error deleting task:", error);
-    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+    return new NextResponse("Error deleting task", { status: 500 });
   }
-} 
+}

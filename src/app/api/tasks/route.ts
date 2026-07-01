@@ -2,15 +2,24 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { auth } from "@clerk/nextjs/server"; // NAYA: Clerk import
 
 // Initialize Gemini AI with your API Key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// GET API: Saare tasks fetch karne ke liye (Ye same rahega)
+// GET API: Sirf logged-in user ke tasks fetch karne ke liye
 export async function GET() {
   try {
+    const { userId } = await auth(); // <-- NAYA: Yahan 'await' lagaya
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectToDatabase();
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    
+    // NAYA: find() ke andar userId daal diya taaki sirf is user ke tasks aayen
+    const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
+    
     return NextResponse.json(tasks, { status: 200 });
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -18,9 +27,14 @@ export async function GET() {
   }
 }
 
-// POST API: Naya task create karne ke liye (AI Logic yahan add kiya hai)
+// POST API: Naya task create karne ke liye (AI Logic + Auth)
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth(); // <-- NAYA: Yahan bhi 'await' lagaya
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { title, description } = body;
     
@@ -46,12 +60,13 @@ export async function POST(request: Request) {
     const result = await model.generateContent(prompt);
     const aiResponseText = result.response.text();
     
-    // 3. Clean up the response (in case Gemini wraps it in ```json ... ```)
+    // 3. Clean up the response
     const cleanedText = aiResponseText.replace(/```json/g, "").replace(/```/g, "").trim();
     const aiData = JSON.parse(cleanedText);
 
     // 4. Merge User Data with AI Data and Save to MongoDB
     const newTask = await Task.create({
+      userId, // <--- NAYA: Task ke sath userId bhi database mein save hoga
       title,
       description,
       priority: aiData.priority || "MEDIUM",

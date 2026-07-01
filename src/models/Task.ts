@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// TypeScript interface for better type checking
 export interface ITask extends Document {
+  userId: string; // <-- NAYA: Clerk User ID ke liye
   title: string;
   description?: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
@@ -13,32 +13,14 @@ export interface ITask extends Document {
 
 const TaskSchema: Schema = new Schema(
   {
-    title: { 
-      type: String, 
-      required: true 
-    },
-    description: { 
-      type: String 
-    },
-    status: {
-      type: String,
-      enum: ['TODO', 'IN_PROGRESS', 'DONE'],
-      default: 'TODO',
-    },
-    // AI is priority ko decide karega task ke description ke hisaab se
-    priority: {
-      type: String,
-      enum: ['LOW', 'MEDIUM', 'HIGH'],
-      default: 'MEDIUM',
-    },
-    // AI auto-generate karega relevant tags (e.g., 'bug', 'frontend')
-    tags: { 
-      type: [String], 
-      default: [] 
-    },
+    userId: { type: String, required: true }, // <-- NAYA
+    title: { type: String, required: true },
+    description: { type: String },
+    status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
+    priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
+    tags: { type: [String], default: [] },
   },
   { timestamps: true }
 );
 
-// Next.js hot-reload ke time error se bachne ke liye ye check zaroori hai
 export default mongoose.models.Task || mongoose.model<ITask>('Task', TaskSchema);
