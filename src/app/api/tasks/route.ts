@@ -2,22 +2,22 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { auth } from "@clerk/nextjs/server"; // NAYA: Clerk import
+import { auth } from "@clerk/nextjs/server"; 
 
-// Initialize Gemini AI with your API Key
+// NAYA: Ye line Next.js ko response cache (save) karne se rokti hai
+export const dynamic = 'force-dynamic';
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// GET API: Sirf logged-in user ke tasks fetch karne ke liye
 export async function GET() {
   try {
-    const { userId } = await auth(); // <-- NAYA: Yahan 'await' lagaya
+    const { userId } = await auth(); 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectToDatabase();
     
-    // NAYA: find() ke andar userId daal diya taaki sirf is user ke tasks aayen
     const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
     
     return NextResponse.json(tasks, { status: 200 });
@@ -27,10 +27,9 @@ export async function GET() {
   }
 }
 
-// POST API: Naya task create karne ke liye (AI Logic + Auth)
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth(); // <-- NAYA: Yahan bhi 'await' lagaya
+    const { userId } = await auth(); 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -40,7 +39,6 @@ export async function POST(request: Request) {
     
     await connectToDatabase();
 
-    // 1. Setup Gemini Prompt
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `
       You are an expert project manager. Analyze the following task and determine its priority and relevant tags.
@@ -56,17 +54,14 @@ export async function POST(request: Request) {
       Keep tags short (1-2 words max) and limit to a maximum of 3 tags.
     `;
 
-    // 2. Ask Gemini for Priority and Tags
     const result = await model.generateContent(prompt);
     const aiResponseText = result.response.text();
     
-    // 3. Clean up the response
     const cleanedText = aiResponseText.replace(/```json/g, "").replace(/```/g, "").trim();
     const aiData = JSON.parse(cleanedText);
 
-    // 4. Merge User Data with AI Data and Save to MongoDB
     const newTask = await Task.create({
-      userId, // <--- NAYA: Task ke sath userId bhi database mein save hoga
+      userId, 
       title,
       description,
       priority: aiData.priority || "MEDIUM",
