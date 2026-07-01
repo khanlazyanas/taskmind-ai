@@ -126,7 +126,7 @@ export default function Home() {
               <CreateTaskModal onSuccess={fetchTasks} />
             </div>
             <div className="h-12 w-12 flex items-center justify-center bg-white rounded-full border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
-              <UserButton afterSignOutUrl="/sign-in" appearance={{ elements: { avatarBox: "w-9 h-9" } }} />
+              <UserButton appearance={{ elements: { avatarBox: "w-9 h-9" } }} />
             </div>
           </div>
         </div>
