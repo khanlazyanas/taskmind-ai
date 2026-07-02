@@ -13,9 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Loader2, Calendar } from "lucide-react"; // NAYA: Calendar icon import kiya
 
-// NAYA: TypeScript interface define kiya jisme onSuccess ko allow kiya hai
 interface CreateTaskModalProps {
   onSuccess: () => void | Promise<void>;
 }
@@ -24,6 +23,7 @@ export default function CreateTaskModal({ onSuccess }: CreateTaskModalProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState(""); // NAYA: Due date ka state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,14 +35,16 @@ export default function CreateTaskModal({ onSuccess }: CreateTaskModalProps) {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
+        // NAYA: dueDate ko API mein bhej rahe hain (agar khali hai toh undefined jayega)
+        body: JSON.stringify({ title, description, dueDate: dueDate || undefined }),
       });
 
       if (res.ok) {
         setOpen(false);
         setTitle("");
         setDescription("");
-        await onSuccess(); // Naya task banne ke baad dashboard refresh hoga
+        setDueDate(""); // Form reset par date clear kardi
+        await onSuccess(); 
       }
     } catch (error) {
       console.error("Failed to create task", error);
@@ -90,6 +92,20 @@ export default function CreateTaskModal({ onSuccess }: CreateTaskModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="rounded-xl border-zinc-200 shadow-sm focus-visible:ring-zinc-900 min-h-[120px] p-4"
+            />
+          </div>
+
+          {/* NAYA: Due Date Input Field */}
+          <div className="space-y-3">
+            <Label htmlFor="dueDate" className="text-zinc-700 font-bold flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-zinc-500" /> Due Date <span className="text-zinc-400 font-normal">(Optional)</span>
+            </Label>
+            <Input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="rounded-xl border-zinc-200 shadow-sm focus-visible:ring-zinc-900 px-4 py-5 text-zinc-700"
             />
           </div>
 

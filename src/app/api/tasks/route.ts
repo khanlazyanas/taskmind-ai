@@ -31,12 +31,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description } = body;
+    // NAYA: dueDate ko body se extract kiya
+    const { title, description, dueDate } = body;
     
     await connectToDatabase();
 
-    // FIX 1: Wapas superfast 'gemini-2.5-flash' model laga diya hai
-    // FIX 2: generationConfig use kiya taaki response hamesha strict JSON format mein aaye
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" }
@@ -60,11 +59,8 @@ export async function POST(request: Request) {
     `;
 
     const result = await model.generateContent(prompt);
-    
-    // Ab humein replace ya regex hack ki zaroorat nahi hai. Data direct clean parse hoga!
     const aiData = JSON.parse(result.response.text());
 
-    // AI ne jo subtasks diye, unko MongoDB ke object format mein convert kiya
     const generatedSubtasks = aiData.subtasks 
       ? aiData.subtasks.map((step: string) => ({ title: step, completed: false }))
       : [];
@@ -76,6 +72,8 @@ export async function POST(request: Request) {
       priority: aiData.priority || "MEDIUM",
       tags: aiData.tags || [],
       subtasks: generatedSubtasks, 
+      // NAYA: Agar dueDate aayi hai toh usko Date object banakar save karo
+      dueDate: dueDate ? new Date(dueDate) : undefined,
     });
     
     return NextResponse.json(newTask, { status: 201 });
