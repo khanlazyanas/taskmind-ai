@@ -14,6 +14,7 @@ interface Task {
   status: string;
   priority: string;
   tags: string[];
+  subtasks?: { _id: string, title: string, completed: boolean }[];
   createdAt: string;
 }
 
@@ -24,7 +25,6 @@ export default function Home() {
   // 1. Fetch Tasks API
   const fetchTasks = async () => {
     try {
-      // FIX: Yahan 'no-store' lagaya hai taaki frontend bhi data yaad na rakhe
       const res = await fetch("/api/tasks", { cache: "no-store" });
       const data = await res.json();
       setTasks(data);
@@ -179,6 +179,7 @@ export default function Home() {
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
+                      
                       <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
                           {task.title}
@@ -186,7 +187,25 @@ export default function Home() {
                         <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
                           {task.description}
                         </p>
+                        
+                        {/* AI Subtasks List */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
+                            </h4>
+                            {task.subtasks.map((sub, idx) => (
+                              <div key={idx} className="flex items-start gap-2 group/subtask">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/50 flex-shrink-0" />
+                                <span className="text-[13px] font-medium text-zinc-600 leading-tight">
+                                  {sub.title}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+
                       <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
                         <div className="flex items-center gap-3">
                           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
@@ -249,6 +268,7 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
+                      
                       <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
                           {task.title}
@@ -256,7 +276,25 @@ export default function Home() {
                         <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
                           {task.description}
                         </p>
+
+                        {/* AI Subtasks List */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
+                            </h4>
+                            {task.subtasks.map((sub, idx) => (
+                              <div key={idx} className="flex items-start gap-2 group/subtask">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/50 flex-shrink-0" />
+                                <span className="text-[13px] font-medium text-zinc-600 leading-tight">
+                                  {sub.title}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+
                       <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
                         <div className="flex items-center gap-3">
                           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
@@ -313,10 +351,31 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
+                      
                       <div className="pointer-events-auto">
                         <h3 className="text-[1.1rem] font-bold text-zinc-500 line-through leading-snug mb-2 group-hover:text-zinc-700 transition-colors">
                           {task.title}
                         </h3>
+
+                        {/* AI Subtasks List (Completed State) */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <div className="mt-4 space-y-2 opacity-70">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <Bot className="w-3.5 h-3.5 text-zinc-400" /> Action Plan
+                            </h4>
+                            {task.subtasks.map((sub, idx) => (
+                              <div key={idx} className="flex items-start gap-2 group/subtask">
+                                <div className="mt-0.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-100 text-green-600 flex-shrink-0">
+                                  <CheckCircle className="w-2.5 h-2.5" />
+                                </div>
+                                <span className="text-[13px] font-medium text-zinc-400 line-through leading-tight">
+                                  {sub.title}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                       </div>
                     </CardContent>
                   </Card>

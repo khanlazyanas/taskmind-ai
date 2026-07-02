@@ -2,24 +2,20 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { auth } from "@clerk/nextjs/server"; 
+import { auth } from "@clerk/nextjs/server";
 
-// NAYA: Ye line Next.js ko response cache (save) karne se rokti hai
 export const dynamic = 'force-dynamic';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function GET() {
   try {
-    const { userId } = await auth(); 
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
     await connectToDatabase();
-    
     const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
-    
     return NextResponse.json(tasks, { status: 200 });
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -29,7 +25,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth(); 
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -39,33 +35,43 @@ export async function POST(request: Request) {
     
     await connectToDatabase();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // NAYA: Yahan 'gemini-1.5-pro' use kar rahe hain deep reasoning ke liye
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    
     const prompt = `
-      You are an expert project manager. Analyze the following task and determine its priority and relevant tags.
+      You are an expert agile project manager. Analyze the following task and:
+      1. Determine its priority (HIGH, MEDIUM, LOW).
+      2. Provide up to 3 relevant tags.
+      3. Break down the task into 3 to 4 actionable subtasks.
       
       Task Title: "${title}"
       Task Context/Description: "${description || "No description provided."}"
       
-      Respond ONLY with a valid JSON object strictly matching this format (no extra text, no markdown):
+      Respond ONLY with a valid JSON object strictly matching this format:
       {
         "priority": "HIGH" | "MEDIUM" | "LOW",
-        "tags": ["tag1", "tag2", "tag3"]
+        "tags": ["tag1", "tag2"],
+        "subtasks": ["Step 1 description", "Step 2 description", "Step 3 description"]
       }
-      Keep tags short (1-2 words max) and limit to a maximum of 3 tags.
     `;
 
     const result = await model.generateContent(prompt);
     const aiResponseText = result.response.text();
-    
     const cleanedText = aiResponseText.replace(/```json/g, "").replace(/```/g, "").trim();
     const aiData = JSON.parse(cleanedText);
 
+    // AI ne jo subtasks diye (strings), unko MongoDB ke format mein convert kiya
+    const generatedSubtasks = aiData.subtasks 
+      ? aiData.subtasks.map((step: string) => ({ title: step, completed: false }))
+      : [];
+
     const newTask = await Task.create({
-      userId, 
+      userId,
       title,
       description,
       priority: aiData.priority || "MEDIUM",
       tags: aiData.tags || [],
+      subtasks: generatedSubtasks, // NAYA: Database mein save kiya
     });
     
     return NextResponse.json(newTask, { status: 201 });
