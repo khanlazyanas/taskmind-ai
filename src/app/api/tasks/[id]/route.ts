@@ -3,7 +3,6 @@ import dbConnect from "@/lib/mongodb";
 import Task from "@/models/Task";
 import { auth } from "@clerk/nextjs/server";
 
-// NAYA: TypeScript ko batana hoga ki params ab ek Promise hai
 export async function PATCH(
   req: Request, 
   { params }: { params: Promise<{ id: string }> }
@@ -14,14 +13,16 @@ export async function PATCH(
 
     await dbConnect();
     const body = await req.json();
-    
-    // NAYA: params ko await karke usme se 'id' nikalna zaroori hai
     const { id } = await params;
     
-    // Find karte waqt naye 'id' aur userId ko match kiya
+    // NAYA: Status aur Subtasks dono ko dynamically update karne ka logic
+    const updateData: any = {};
+    if (body.status) updateData.status = body.status;
+    if (body.subtasks) updateData.subtasks = body.subtasks;
+
     const updatedTask = await Task.findOneAndUpdate(
       { _id: id, userId }, 
-      { status: body.status },
+      { $set: updateData },
       { new: true }
     );
 
@@ -41,11 +42,8 @@ export async function DELETE(
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
     await dbConnect();
-    
-    // NAYA: Yahan bhi params ko await karna hai
     const { id } = await params;
     
-    // Sirf wahi task delete hoga jo logged-in user ka hai
     const deletedTask = await Task.findOneAndDelete({ _id: id, userId });
 
     if (!deletedTask) return new NextResponse("Not Found", { status: 404 });

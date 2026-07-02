@@ -22,7 +22,6 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Fetch Tasks API
   const fetchTasks = async () => {
     try {
       const res = await fetch("/api/tasks", { cache: "no-store" });
@@ -39,7 +38,6 @@ export default function Home() {
     fetchTasks();
   }, []);
 
-  // 2. Update Task Status API
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -60,7 +58,6 @@ export default function Home() {
     }
   };
 
-  // 3. Delete Task API
   const deleteTask = async (taskId: string) => {
     setTasks((prev) => prev.filter((task) => task._id !== taskId));
     try {
@@ -72,7 +69,30 @@ export default function Home() {
     }
   };
 
-  // --- DRAG AND DROP LOGIC (FIXED) ---
+  // NAYA: Subtask Toggle Function
+  const toggleSubtask = async (taskId: string, subtaskIndex: number) => {
+    const task = tasks.find((t) => t._id === taskId);
+    if (!task || !task.subtasks) return;
+
+    const updatedSubtasks = [...task.subtasks];
+    updatedSubtasks[subtaskIndex].completed = !updatedSubtasks[subtaskIndex].completed;
+
+    setTasks((prev) =>
+      prev.map((t) => (t._id === taskId ? { ...t, subtasks: updatedSubtasks } : t))
+    );
+
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subtasks: updatedSubtasks }),
+      });
+    } catch (error) {
+      console.error("Error updating subtask:", error);
+      fetchTasks(); 
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
     e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.effectAllowed = "move";
@@ -90,7 +110,6 @@ export default function Home() {
     e.preventDefault(); 
     e.dataTransfer.dropEffect = "move";
   };
-  // -----------------------------------
 
   const todoTasks = tasks.filter((t) => t.status === "TODO");
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
@@ -109,7 +128,6 @@ export default function Home() {
     <main className="min-h-screen bg-[#FAFAFA] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-zinc-950 font-sans selection:bg-zinc-900 selection:text-white pb-20">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-12">
         
-        {/* Premium Glassmorphic Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
@@ -142,7 +160,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             
-            {/* TODO Column Drop Zone */}
+            {/* TODO Column */}
             <div 
               className="flex flex-col gap-5 bg-zinc-50/50 p-4 rounded-[2rem] border border-zinc-100/80 shadow-sm transition-colors hover:bg-zinc-50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "TODO")}
@@ -188,16 +206,19 @@ export default function Home() {
                           {task.description}
                         </p>
                         
-                        {/* AI Subtasks List */}
+                        {/* NAYA: Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                               <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
                             </h4>
                             {task.subtasks.map((sub, idx) => (
-                              <div key={idx} className="flex items-start gap-2 group/subtask">
-                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/50 flex-shrink-0" />
-                                <span className="text-[13px] font-medium text-zinc-600 leading-tight">
+                              <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
+                                  ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
+                                  {sub.completed && <CheckCircle className="w-3 h-3" />}
+                                </div>
+                                <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
                                   {sub.title}
                                 </span>
                               </div>
@@ -226,7 +247,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* IN PROGRESS Column Drop Zone */}
+            {/* IN PROGRESS Column */}
             <div 
               className="flex flex-col gap-5 bg-blue-50/30 p-4 rounded-[2rem] border border-blue-100/50 shadow-sm transition-colors hover:bg-blue-50/50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "IN_PROGRESS")}
@@ -277,16 +298,19 @@ export default function Home() {
                           {task.description}
                         </p>
 
-                        {/* AI Subtasks List */}
+                        {/* NAYA: Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                               <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
                             </h4>
                             {task.subtasks.map((sub, idx) => (
-                              <div key={idx} className="flex items-start gap-2 group/subtask">
-                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/50 flex-shrink-0" />
-                                <span className="text-[13px] font-medium text-zinc-600 leading-tight">
+                              <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
+                                  ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
+                                  {sub.completed && <CheckCircle className="w-3 h-3" />}
+                                </div>
+                                <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
                                   {sub.title}
                                 </span>
                               </div>
@@ -308,7 +332,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* DONE Column Drop Zone */}
+            {/* DONE Column */}
             <div 
               className="flex flex-col gap-5 bg-green-50/30 p-4 rounded-[2rem] border border-green-100/50 shadow-sm transition-colors hover:bg-green-50/50 min-h-[300px]"
               onDrop={(e) => handleDrop(e, "DONE")}
