@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
-import EditTaskModal from "@/components/EditTaskModal"; 
+import EditTaskModal from "@/components/EditTaskModal";
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -16,6 +16,7 @@ interface Task {
   priority: string;
   tags: string[];
   subtasks?: { _id: string, title: string, completed: boolean }[];
+  dueDate?: string; // NAYA: Interface mein add kiya
   createdAt: string;
 }
 
@@ -135,6 +136,31 @@ export default function Home() {
       case "LOW": return "bg-green-50 text-green-600 ring-1 ring-green-200 shadow-sm";
       default: return "bg-zinc-50 text-zinc-600 ring-1 ring-zinc-200 shadow-sm";
     }
+  };
+
+  // NAYA: Due Date Status aur Color nikalne ka logic
+  const getDueDateDetails = (dueDateStr?: string, status?: string) => {
+    if (!dueDateStr) return { text: null, className: "text-zinc-400" };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const due = new Date(dueDateStr);
+    due.setHours(0, 0, 0, 0);
+
+    const formattedDate = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+    if (status === "DONE") {
+      return { text: `Due: ${formattedDate}`, className: "text-zinc-400" };
+    }
+
+    if (due < today) {
+      return { text: `Overdue: ${formattedDate}`, className: "text-red-600 font-bold flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded-lg ring-1 ring-red-200/50", isOverdue: true };
+    } else if (due.getTime() === today.getTime()) {
+      return { text: `Due Today`, className: "text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-lg ring-1 ring-amber-200/50" };
+    }
+
+    return { text: `Due: ${formattedDate}`, className: "text-zinc-500 font-semibold" };
   };
 
   return (
@@ -261,85 +287,89 @@ export default function Home() {
               </div>
               
               <div className="flex flex-col gap-4">
-                {todoTasks.map((task) => (
-                  <Card 
-                    key={task._id} 
-                    draggable 
-                    onDragStart={(e) => handleDragStart(e, task._id)}
-                    className="group bg-white rounded-3xl border-0 ring-1 ring-zinc-200/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
-                  >
-                    <CardContent className="p-6 space-y-5 pointer-events-none">
-                      <div className="flex justify-between items-start pointer-events-auto">
-                        <div className="flex gap-2 flex-wrap">
-                          {task.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {/* NAYA: Edit Button Modal Trigger */}
-                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
-                          <EditTaskModal 
-                            taskId={task._id} 
-                            initialTitle={task.title} 
-                            initialDescription={task.description || ""} 
-                            onSuccess={fetchTasks} 
-                          />
-                          <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Start Task">
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="pointer-events-auto">
-                        <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                          {task.title}
-                        </h3>
-                        <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
-                          {task.description}
-                        </p>
-                        
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div className="mt-4 space-y-2">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
-                            </h4>
-                            {task.subtasks.map((sub, idx) => (
-                              <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
-                                <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
-                                  ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
-                                  {sub.completed && <CheckCircle className="w-3 h-3" />}
-                                </div>
-                                <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
-                                  {sub.title}
-                                </span>
-                              </div>
+                {todoTasks.map((task) => {
+                  const dateDetails = getDueDateDetails(task.dueDate, task.status);
+                  return (
+                    <Card 
+                      key={task._id} 
+                      draggable 
+                      onDragStart={(e) => handleDragStart(e, task._id)}
+                      className="group bg-white rounded-3xl border-0 ring-1 ring-zinc-200/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                    >
+                      <CardContent className="p-6 space-y-5 pointer-events-none">
+                        <div className="flex justify-between items-start pointer-events-auto">
+                          <div className="flex gap-2 flex-wrap">
+                            {task.tags.map((tag, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
+                                {tag}
+                              </Badge>
                             ))}
                           </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
-                            {task.priority.charAt(0)}
+                          
+                          <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                            <EditTaskModal 
+                              taskId={task._id} 
+                              initialTitle={task.title} 
+                              initialDescription={task.description || ""} 
+                              onSuccess={fetchTasks} 
+                            />
+                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-600 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Start Task">
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                          <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" /> 
-                            {new Date(task.createdAt).toLocaleDateString()}
-                          </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] uppercase font-extrabold tracking-wide text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-full ring-1 ring-amber-200/50 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <Sparkles className="w-3 h-3" /> AI Tagged
+                        
+                        <div className="pointer-events-auto">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            {task.title}
+                          </h3>
+                          <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
+                            {task.description}
+                          </p>
+                          
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
+                              </h4>
+                              {task.subtasks.map((sub, idx) => (
+                                <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                  <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
+                                    ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
+                                    {sub.completed && <CheckCircle className="w-3 h-3" />}
+                                  </div>
+                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
+                                    {sub.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
+                              {task.priority.charAt(0)}
+                            </div>
+                            
+                            {/* NAYA: Due Date Display Section */}
+                            <span className={`text-xs flex items-center gap-1.5 ${dateDetails.className}`}>
+                              {dateDetails.isOverdue ? <AlertCircle className="w-3.5 h-3.5 text-red-500 animate-pulse" /> : <Clock className="w-3.5 h-3.5 text-zinc-400" />}
+                              {dateDetails.text || new Date(task.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] uppercase font-extrabold tracking-wide text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-full ring-1 ring-amber-200/50 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <Sparkles className="w-3 h-3" /> AI Tagged
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
@@ -360,81 +390,89 @@ export default function Home() {
               </div>
               
               <div className="flex flex-col gap-4">
-                {inProgressTasks.map((task) => (
-                  <Card 
-                    key={task._id}
-                    draggable 
-                    onDragStart={(e) => handleDragStart(e, task._id)}
-                    className="group bg-white rounded-3xl border-0 ring-1 ring-blue-200/60 shadow-[0_2px_10px_rgb(59,130,246,0.04)] hover:shadow-[0_20px_40px_rgb(59,130,246,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
-                  >
-                    <CardContent className="p-6 space-y-5 pointer-events-none">
-                      <div className="flex justify-between items-start pointer-events-auto">
-                        <div className="flex gap-2 flex-wrap">
-                          {task.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {/* NAYA: Edit Button */}
-                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
-                          <EditTaskModal 
-                            taskId={task._id} 
-                            initialTitle={task.title} 
-                            initialDescription={task.description || ""} 
-                            onSuccess={fetchTasks} 
-                          />
-                          <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 hover:text-white bg-zinc-100 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
-                            <ArrowLeft className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-white bg-green-50 hover:bg-green-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="pointer-events-auto">
-                        <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                          {task.title}
-                        </h3>
-                        <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
-                          {task.description}
-                        </p>
-
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div className="mt-4 space-y-2">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
-                            </h4>
-                            {task.subtasks.map((sub, idx) => (
-                              <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
-                                <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
-                                  ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
-                                  {sub.completed && <CheckCircle className="w-3 h-3" />}
-                                </div>
-                                <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
-                                  {sub.title}
-                                </span>
-                              </div>
+                {inProgressTasks.map((task) => {
+                  const dateDetails = getDueDateDetails(task.dueDate, task.status);
+                  return (
+                    <Card 
+                      key={task._id}
+                      draggable 
+                      onDragStart={(e) => handleDragStart(e, task._id)}
+                      className="group bg-white rounded-3xl border-0 ring-1 ring-blue-200/60 shadow-[0_2px_10px_rgb(59,130,246,0.04)] hover:shadow-[0_20px_40px_rgb(59,130,246,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                    >
+                      <CardContent className="p-6 space-y-5 pointer-events-none">
+                        <div className="flex justify-between items-start pointer-events-auto">
+                          <div className="flex gap-2 flex-wrap">
+                            {task.tags.map((tag, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
+                                {tag}
+                              </Badge>
                             ))}
                           </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
-                            {task.priority.charAt(0)}
+                          
+                          <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                            <EditTaskModal 
+                              taskId={task._id} 
+                              initialTitle={task.title} 
+                              initialDescription={task.description || ""} 
+                              onSuccess={fetchTasks} 
+                            />
+                            <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 hover:text-white bg-zinc-100 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                              <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-white bg-green-50 hover:bg-green-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        
+                        <div className="pointer-events-auto">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-900 leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            {task.title}
+                          </h3>
+                          <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed font-medium">
+                            {task.description}
+                          </p>
+
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <Bot className="w-3.5 h-3.5 text-blue-500" /> AI Action Plan
+                              </h4>
+                              {task.subtasks.map((sub, idx) => (
+                                <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                  <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
+                                    ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 hover:border-blue-400 bg-white'}`}>
+                                    {sub.completed && <CheckCircle className="w-3 h-3" />}
+                                  </div>
+                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 line-through' : 'text-zinc-600'}`}>
+                                    {sub.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
+                              {task.priority.charAt(0)}
+                            </div>
+                            
+                            {/* NAYA: Due Date Display Section */}
+                            <span className={`text-xs flex items-center gap-1.5 ${dateDetails.className}`}>
+                              {dateDetails.isOverdue ? <AlertCircle className="w-3.5 h-3.5 text-red-500 animate-pulse" /> : <Clock className="w-3.5 h-3.5 text-zinc-400" />}
+                              {dateDetails.text || new Date(task.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
@@ -455,66 +493,78 @@ export default function Home() {
               </div>
               
               <div className="flex flex-col gap-4">
-                {doneTasks.map((task) => (
-                  <Card 
-                    key={task._id}
-                    draggable 
-                    onDragStart={(e) => handleDragStart(e, task._id)}
-                    className="group bg-white/60 rounded-3xl border-0 ring-1 ring-green-200/50 shadow-sm opacity-80 hover:opacity-100 hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
-                  >
-                    <CardContent className="p-6 space-y-5 pointer-events-none">
-                      <div className="flex justify-between items-start pointer-events-auto">
-                        <div className="flex gap-2 flex-wrap opacity-100 lg:opacity-60 lg:group-hover:opacity-100 transition-opacity">
-                          {task.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {/* NAYA: Edit Button */}
-                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
-                          <EditTaskModal 
-                            taskId={task._id} 
-                            initialTitle={task.title} 
-                            initialDescription={task.description || ""} 
-                            onSuccess={fetchTasks} 
-                          />
-                          <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
-                            <ArrowLeft className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="pointer-events-auto">
-                        <h3 className="text-[1.1rem] font-bold text-zinc-500 line-through leading-snug mb-2 group-hover:text-zinc-700 transition-colors">
-                          {task.title}
-                        </h3>
-
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div className="mt-4 space-y-2 opacity-70">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Bot className="w-3.5 h-3.5 text-zinc-400" /> Action Plan
-                            </h4>
-                            {task.subtasks.map((sub, idx) => (
-                              <div key={idx} className="flex items-start gap-2 group/subtask">
-                                <div className="mt-0.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-100 text-green-600 flex-shrink-0">
-                                  <CheckCircle className="w-2.5 h-2.5" />
-                                </div>
-                                <span className="text-[13px] font-medium text-zinc-400 line-through leading-tight">
-                                  {sub.title}
-                                </span>
-                              </div>
+                {doneTasks.map((task) => {
+                  const dateDetails = getDueDateDetails(task.dueDate, task.status);
+                  return (
+                    <Card 
+                      key={task._id}
+                      draggable 
+                      onDragStart={(e) => handleDragStart(e, task._id)}
+                      className="group bg-white/60 rounded-3xl border-0 ring-1 ring-green-200/50 shadow-sm opacity-80 hover:opacity-100 hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                    >
+                      <CardContent className="p-6 space-y-5 pointer-events-none">
+                        <div className="flex justify-between items-start pointer-events-auto">
+                          <div className="flex gap-2 flex-wrap opacity-100 lg:opacity-60 lg:group-hover:opacity-100 transition-opacity">
+                            {task.tags.map((tag, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200/80 font-bold rounded-lg px-2.5 py-1">
+                                {tag}
+                              </Badge>
                             ))}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          
+                          <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                            <EditTaskModal 
+                              taskId={task._id} 
+                              initialTitle={task.title} 
+                              initialDescription={task.description || ""} 
+                              onSuccess={fetchTasks} 
+                            />
+                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                              <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="pointer-events-auto">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-500 line-through leading-snug mb-2 group-hover:text-zinc-700 transition-colors">
+                            {task.title}
+                          </h3>
+
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="mt-4 space-y-2 opacity-70">
+                              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <Bot className="w-3.5 h-3.5 text-zinc-400" /> Action Plan
+                              </h4>
+                              {task.subtasks.map((sub, idx) => (
+                                <div key={idx} className="flex items-start gap-2 group/subtask">
+                                  <div className="mt-0.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-100 text-green-600 flex-shrink-0">
+                                    <CheckCircle className="w-2.5 h-2.5" />
+                                  </div>
+                                  <span className="text-[13px] font-medium text-zinc-400 line-through leading-tight">
+                                    {sub.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-2 pointer-events-auto">
+                          <div className="flex items-center gap-3">
+                            {/* NAYA: Due date completion display */}
+                            <span className={`text-xs flex items-center gap-1.5 ${dateDetails.className}`}>
+                              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                              {dateDetails.text || new Date(task.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
