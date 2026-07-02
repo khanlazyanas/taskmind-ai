@@ -35,8 +35,12 @@ export async function POST(request: Request) {
     
     await connectToDatabase();
 
-    // NAYA: Yahan 'gemini-1.5-pro' use kar rahe hain deep reasoning ke liye
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    // FIX 1: Wapas superfast 'gemini-2.5-flash' model laga diya hai
+    // FIX 2: generationConfig use kiya taaki response hamesha strict JSON format mein aaye
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    });
     
     const prompt = `
       You are an expert agile project manager. Analyze the following task and:
@@ -56,11 +60,11 @@ export async function POST(request: Request) {
     `;
 
     const result = await model.generateContent(prompt);
-    const aiResponseText = result.response.text();
-    const cleanedText = aiResponseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const aiData = JSON.parse(cleanedText);
+    
+    // Ab humein replace ya regex hack ki zaroorat nahi hai. Data direct clean parse hoga!
+    const aiData = JSON.parse(result.response.text());
 
-    // AI ne jo subtasks diye (strings), unko MongoDB ke format mein convert kiya
+    // AI ne jo subtasks diye, unko MongoDB ke object format mein convert kiya
     const generatedSubtasks = aiData.subtasks 
       ? aiData.subtasks.map((step: string) => ({ title: step, completed: false }))
       : [];
@@ -71,7 +75,7 @@ export async function POST(request: Request) {
       description,
       priority: aiData.priority || "MEDIUM",
       tags: aiData.tags || [],
-      subtasks: generatedSubtasks, // NAYA: Database mein save kiya
+      subtasks: generatedSubtasks, 
     });
     
     return NextResponse.json(newTask, { status: 201 });
