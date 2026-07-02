@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2 } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2 } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import { UserButton } from "@clerk/nextjs";
 
@@ -69,7 +69,6 @@ export default function Home() {
     }
   };
 
-  // NAYA: Subtask Toggle Function
   const toggleSubtask = async (taskId: string, subtaskIndex: number) => {
     const task = tasks.find((t) => t._id === taskId);
     if (!task || !task.subtasks) return;
@@ -115,6 +114,10 @@ export default function Home() {
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = tasks.filter((t) => t.status === "DONE");
 
+  // NAYA: Analytics ke calculations
+  const totalTasks = tasks.length;
+  const completionPercentage = totalTasks === 0 ? 0 : Math.round((doneTasks.length / totalTasks) * 100);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "HIGH": return "bg-red-50 text-red-600 ring-1 ring-red-200 shadow-sm";
@@ -126,8 +129,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-zinc-950 font-sans selection:bg-zinc-900 selection:text-white pb-20">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-12">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-10">
         
+        {/* Premium Glassmorphic Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
@@ -151,6 +155,47 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* NAYA: Smart Analytics Dashboard Row */}
+        {!isLoading && tasks.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-white rounded-3xl p-5 border border-zinc-100 shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-zinc-100/80 text-zinc-600 rounded-2xl">
+                <ListTodo className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Total Tasks</p>
+                <h3 className="text-2xl font-extrabold text-zinc-900">{totalTasks}</h3>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-3xl p-5 border border-blue-50 shadow-sm flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-zinc-400 uppercase tracking-wider">In Progress</p>
+                <h3 className="text-2xl font-extrabold text-zinc-900">{inProgressTasks.length}</h3>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-3xl p-5 border border-green-50 shadow-sm flex flex-col justify-center gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <p className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Completion</p>
+                </div>
+                <span className="text-lg font-extrabold text-green-600">{completionPercentage}%</span>
+              </div>
+              <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" 
+                  style={{ width: `${completionPercentage}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col justify-center items-center py-32 space-y-4 animate-in fade-in duration-700">
@@ -206,7 +251,7 @@ export default function Home() {
                           {task.description}
                         </p>
                         
-                        {/* NAYA: Interactive Subtasks List */}
+                        {/* Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -298,7 +343,7 @@ export default function Home() {
                           {task.description}
                         </p>
 
-                        {/* NAYA: Interactive Subtasks List */}
+                        {/* Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
