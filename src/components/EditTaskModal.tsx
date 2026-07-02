@@ -1,27 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Loader2, Sparkles } from "lucide-react"; 
+import { Label } from "@/components/ui/label";
+import { Edit2, Loader2, Sparkles, Calendar } from "lucide-react"; 
 
 interface EditTaskModalProps {
   taskId: string;
   initialTitle: string;
   initialDescription: string;
+  initialDueDate?: string; // NAYA: Purani date receive karne ke liye
   onSuccess: () => void;
 }
 
-export default function EditTaskModal({ taskId, initialTitle, initialDescription, onSuccess }: EditTaskModalProps) {
+export default function EditTaskModal({ taskId, initialTitle, initialDescription, initialDueDate, onSuccess }: EditTaskModalProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   
-  // YAHI WOH STATE HAI JO MISSING THI
+  // Date ko YYYY-MM-DD format mein convert karna input field ke liye
+  const formatDateForInput = (isoString?: string) => {
+    if (!isoString) return "";
+    return new Date(isoString).toISOString().split('T')[0];
+  };
+
+  const [dueDate, setDueDate] = useState(formatDateForInput(initialDueDate)); 
   const [regenerateAI, setRegenerateAI] = useState(false); 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Agar initial prop change ho toh state update karo
+  useEffect(() => {
+    setTitle(initialTitle);
+    setDescription(initialDescription);
+    setDueDate(formatDateForInput(initialDueDate));
+  }, [initialTitle, initialDescription, initialDueDate, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,13 +47,13 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        // Yahan se regenerateAI true/false backend ko ja raha hai
-        body: JSON.stringify({ title, description, regenerateAI }), 
+        // NAYA: dueDate ko bhi bhej rahe hain
+        body: JSON.stringify({ title, description, regenerateAI, dueDate: dueDate || null }), 
       });
 
       if (res.ok) {
         setOpen(false);
-        setRegenerateAI(false); // Modal band hone par reset
+        setRegenerateAI(false);
         onSuccess();
       }
     } catch (error) {
@@ -63,7 +78,7 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-zinc-600">Task Title</label>
+            <Label className="text-sm font-bold text-zinc-600">Task Title</Label>
             <Input 
               placeholder="E.g., Fix navbar responsiveness" 
               value={title} 
@@ -74,7 +89,7 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
           </div>
           
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-zinc-600">Description <span className="text-zinc-400 font-normal">(Optional)</span></label>
+            <Label className="text-sm font-bold text-zinc-600">Description <span className="text-zinc-400 font-normal">(Optional)</span></Label>
             <Textarea 
               placeholder="Add more details about this task..." 
               value={description} 
@@ -83,7 +98,19 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
             />
           </div>
 
-          {/* YE RAHA WOH NAYA CHECKBOX JO TUMHE NAHI DIKH RAHA THA */}
+          {/* NAYA: Edit modal mein date field add kar diya */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-bold text-zinc-600 flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-zinc-500" /> Due Date <span className="text-zinc-400 font-normal">(Optional)</span>
+            </Label>
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="rounded-xl border-zinc-200 focus-visible:ring-blue-500 h-11 text-zinc-700"
+            />
+          </div>
+
           <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
             <input
               type="checkbox"

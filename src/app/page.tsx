@@ -414,6 +414,7 @@ export default function Home() {
                               taskId={task._id} 
                               initialTitle={task.title} 
                               initialDescription={task.description || ""} 
+                              initialDueDate={task.dueDate}
                               onSuccess={fetchTasks} 
                             />
                             <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 hover:text-white bg-zinc-100 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">

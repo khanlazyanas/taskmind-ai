@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Task from "@/models/Task";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // NAYA: Gemini Import
+import { GoogleGenerativeAI } from "@google/generative-ai"; 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -23,8 +23,12 @@ export async function PATCH(
     if (body.subtasks) updateData.subtasks = body.subtasks;
     if (body.title) updateData.title = body.title;
     if (body.description !== undefined) updateData.description = body.description;
+    
+    // NAYA: Due date update karne ka logic
+    if (body.dueDate !== undefined) {
+      updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    }
 
-    // NAYA: Agar frontend ne 'regenerateAI' flag bheja hai, toh Gemini ko wapas bulao!
     if (body.regenerateAI && body.title) {
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
@@ -51,7 +55,6 @@ export async function PATCH(
       const result = await model.generateContent(prompt);
       const aiData = JSON.parse(result.response.text());
 
-      // AI se naya data milte hi usko updateData mein daal do
       updateData.priority = aiData.priority || "MEDIUM";
       updateData.tags = aiData.tags || [];
       updateData.subtasks = aiData.subtasks 
