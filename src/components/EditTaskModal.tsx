@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Loader2, Sparkles } from "lucide-react"; // NAYA: Sparkles icon for AI
+import { Edit2, Loader2, Sparkles } from "lucide-react"; 
 
 interface EditTaskModalProps {
   taskId: string;
@@ -18,7 +18,9 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
-  const [regenerateAI, setRegenerateAI] = useState(false); // NAYA: State for AI Checkbox
+  
+  // YAHI WOH STATE HAI JO MISSING THI
+  const [regenerateAI, setRegenerateAI] = useState(false); 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,13 +32,13 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        // NAYA: regenerateAI flag ko backend bhej rahe hain
+        // Yahan se regenerateAI true/false backend ko ja raha hai
         body: JSON.stringify({ title, description, regenerateAI }), 
       });
 
       if (res.ok) {
         setOpen(false);
-        setRegenerateAI(false); // Reset on success
+        setRegenerateAI(false); // Modal band hone par reset
         onSuccess();
       }
     } catch (error) {
@@ -81,7 +83,7 @@ export default function EditTaskModal({ taskId, initialTitle, initialDescription
             />
           </div>
 
-          {/* NAYA: AI Regenerate Checkbox UI */}
+          {/* YE RAHA WOH NAYA CHECKBOX JO TUMHE NAHI DIKH RAHA THA */}
           <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
             <input
               type="checkbox"
