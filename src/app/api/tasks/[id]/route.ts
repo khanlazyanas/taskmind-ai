@@ -15,10 +15,12 @@ export async function PATCH(
     const body = await req.json();
     const { id } = await params;
     
-    // NAYA: Status aur Subtasks dono ko dynamically update karne ka logic
+    // NAYA: Ab Title aur Description bhi update ho payega
     const updateData: any = {};
     if (body.status) updateData.status = body.status;
     if (body.subtasks) updateData.subtasks = body.subtasks;
+    if (body.title) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description; // undefined check kiya kyunki empty string bhi save honi chahiye
 
     const updatedTask = await Task.findOneAndUpdate(
       { _id: id, userId }, 

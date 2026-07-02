@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
+import EditTaskModal from "@/components/EditTaskModal"; // NAYA IMPORT
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -21,8 +22,6 @@ interface Task {
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // NAYA: Search aur Filter ke states
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
 
@@ -114,12 +113,10 @@ export default function Home() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  // Analytics ke liye global tasks
   const totalTasks = tasks.length;
   const globalDoneTasks = tasks.filter((t) => t.status === "DONE");
   const completionPercentage = totalTasks === 0 ? 0 : Math.round((globalDoneTasks.length / totalTasks) * 100);
 
-  // NAYA: Search aur Filter logic
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           task.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -127,7 +124,6 @@ export default function Home() {
     return matchesSearch && matchesPriority;
   });
 
-  // Kanban board ab filtered tasks dikhayega
   const todoTasks = filteredTasks.filter((t) => t.status === "TODO");
   const inProgressTasks = filteredTasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = filteredTasks.filter((t) => t.status === "DONE");
@@ -145,7 +141,6 @@ export default function Home() {
     <main className="min-h-screen bg-[#FAFAFA] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-zinc-950 font-sans selection:bg-zinc-900 selection:text-white pb-20">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-10">
         
-        {/* Premium Glassmorphic Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
@@ -170,7 +165,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Smart Analytics Dashboard Row */}
         {!isLoading && tasks.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="bg-white rounded-3xl p-5 border border-zinc-100 shadow-sm flex items-center gap-4">
@@ -211,7 +205,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* NAYA: Smart Search & Filter Bar */}
         {!isLoading && tasks.length > 0 && (
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-2 pl-4 rounded-3xl border border-zinc-200/60 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center gap-3 w-full md:w-1/3">
@@ -284,9 +277,22 @@ export default function Home() {
                             </Badge>
                           ))}
                         </div>
-                        <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Start Task">
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
+                        
+                        {/* NAYA: Edit Button Modal Trigger */}
+                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                          <EditTaskModal 
+                            taskId={task._id} 
+                            initialTitle={task.title} 
+                            initialDescription={task.description || ""} 
+                            onSuccess={fetchTasks} 
+                          />
+                          <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Start Task">
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="pointer-events-auto">
@@ -297,7 +303,6 @@ export default function Home() {
                           {task.description}
                         </p>
                         
-                        {/* Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -371,12 +376,23 @@ export default function Home() {
                             </Badge>
                           ))}
                         </div>
-                        <div className="flex gap-2 lg:hidden">
-                          <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 hover:text-white bg-zinc-100 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm">
+                        
+                        {/* NAYA: Edit Button */}
+                        <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                          <EditTaskModal 
+                            taskId={task._id} 
+                            initialTitle={task.title} 
+                            initialDescription={task.description || ""} 
+                            onSuccess={fetchTasks} 
+                          />
+                          <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 hover:text-white bg-zinc-100 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-white bg-green-50 hover:bg-green-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm">
+                          <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 hover:text-white bg-green-50 hover:bg-green-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
                             <CheckCircle className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -389,7 +405,6 @@ export default function Home() {
                           {task.description}
                         </p>
 
-                        {/* Interactive Subtasks List */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -457,8 +472,15 @@ export default function Home() {
                           ))}
                         </div>
                         
+                        {/* NAYA: Edit Button */}
                         <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
-                          <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Reopen Task">
+                          <EditTaskModal 
+                            taskId={task._id} 
+                            initialTitle={task.title} 
+                            initialDescription={task.description || ""} 
+                            onSuccess={fetchTasks} 
+                          />
+                          <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 hover:text-white bg-blue-50 hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
                           <button onClick={() => deleteTask(task._id)} className="text-red-500 hover:text-white bg-red-50 hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
@@ -472,7 +494,6 @@ export default function Home() {
                           {task.title}
                         </h3>
 
-                        {/* AI Subtasks List (Completed State) */}
                         {task.subtasks && task.subtasks.length > 0 && (
                           <div className="mt-4 space-y-2 opacity-70">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -490,7 +511,6 @@ export default function Home() {
                             ))}
                           </div>
                         )}
-
                       </div>
                     </CardContent>
                   </Card>
