@@ -15,7 +15,7 @@ export async function PATCH(
     const body = await req.json();
     const { id } = await params;
     
-    // NAYA: Ab Title aur Description bhi update ho payega
+    // NAYA: edit title and description
     const updateData: any = {};
     if (body.status) updateData.status = body.status;
     if (body.subtasks) updateData.subtasks = body.subtasks;

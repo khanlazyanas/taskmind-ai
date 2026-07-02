@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
-import EditTaskModal from "@/components/EditTaskModal"; // NAYA IMPORT
+import EditTaskModal from "@/components/EditTaskModal"; 
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
