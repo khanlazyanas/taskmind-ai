@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import { UserButton } from "@clerk/nextjs";
 
@@ -21,6 +21,10 @@ interface Task {
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // NAYA: Search aur Filter ke states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
 
   const fetchTasks = async () => {
     try {
@@ -110,13 +114,23 @@ export default function Home() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const todoTasks = tasks.filter((t) => t.status === "TODO");
-  const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
-  const doneTasks = tasks.filter((t) => t.status === "DONE");
-
-  // NAYA: Analytics ke calculations
+  // Analytics ke liye global tasks
   const totalTasks = tasks.length;
-  const completionPercentage = totalTasks === 0 ? 0 : Math.round((doneTasks.length / totalTasks) * 100);
+  const globalDoneTasks = tasks.filter((t) => t.status === "DONE");
+  const completionPercentage = totalTasks === 0 ? 0 : Math.round((globalDoneTasks.length / totalTasks) * 100);
+
+  // NAYA: Search aur Filter logic
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPriority = priorityFilter === "ALL" || task.priority === priorityFilter;
+    return matchesSearch && matchesPriority;
+  });
+
+  // Kanban board ab filtered tasks dikhayega
+  const todoTasks = filteredTasks.filter((t) => t.status === "TODO");
+  const inProgressTasks = filteredTasks.filter((t) => t.status === "IN_PROGRESS");
+  const doneTasks = filteredTasks.filter((t) => t.status === "DONE");
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -156,7 +170,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* NAYA: Smart Analytics Dashboard Row */}
+        {/* Smart Analytics Dashboard Row */}
         {!isLoading && tasks.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="bg-white rounded-3xl p-5 border border-zinc-100 shadow-sm flex items-center gap-4">
@@ -175,7 +189,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-sm font-bold text-zinc-400 uppercase tracking-wider">In Progress</p>
-                <h3 className="text-2xl font-extrabold text-zinc-900">{inProgressTasks.length}</h3>
+                <h3 className="text-2xl font-extrabold text-zinc-900">{tasks.filter(t => t.status === "IN_PROGRESS").length}</h3>
               </div>
             </div>
             
@@ -193,6 +207,38 @@ export default function Home() {
                   style={{ width: `${completionPercentage}%` }}
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* NAYA: Smart Search & Filter Bar */}
+        {!isLoading && tasks.length > 0 && (
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-2 pl-4 rounded-3xl border border-zinc-200/60 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex items-center gap-3 w-full md:w-1/3">
+              <Search className="w-5 h-5 text-zinc-400 flex-shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Search tasks..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent border-none focus:outline-none text-sm font-medium placeholder:text-zinc-400 text-zinc-700 h-10"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar pr-2">
+              {["ALL", "HIGH", "MEDIUM", "LOW"].map((priority) => (
+                <button
+                  key={priority}
+                  onClick={() => setPriorityFilter(priority)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
+                    priorityFilter === priority 
+                      ? "bg-zinc-900 text-white shadow-md" 
+                      : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                  }`}
+                >
+                  {priority === "ALL" ? "All Tasks" : `${priority} Priority`}
+                </button>
+              ))}
             </div>
           </div>
         )}
