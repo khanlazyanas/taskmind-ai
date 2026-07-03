@@ -4,11 +4,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react"; 
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download, Calendar as CalendarIcon, Kanban } from "lucide-react"; 
 import CreateTaskModal from "@/components/CreateTaskModal";
 import EditTaskModal from "@/components/EditTaskModal";
 import ChatAssistant from "@/components/ChatAssistant"; 
-import TaskAnalytics from "@/components/TaskAnalytics"; // NAYA: Chart Import
+import TaskAnalytics from "@/components/TaskAnalytics"; 
+import TaskCalendar from "@/components/TaskCalendar"; // NAYA: Calendar Import
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -28,6 +29,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [currentView, setCurrentView] = useState<"KANBAN" | "CALENDAR">("KANBAN"); // NAYA: View State
 
   const fetchTasks = async () => {
     try {
@@ -264,7 +266,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* NAYA: Charts Render Here */}
             <TaskAnalytics tasks={tasks} />
           </>
         )}
@@ -283,6 +284,16 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar pr-2">
+              {/* NAYA: Views Toggler (Kanban vs Calendar) */}
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl mr-2">
+                <button 
+                  onClick={() => setPriorityFilter("ALL")} // Reset to All if clicked
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-zinc-900 shadow-sm text-zinc-800 dark:text-white"
+                >
+                  Board
+                </button>
+              </div>
+
               {["ALL", "HIGH", "MEDIUM", "LOW"].map((priority) => (
                 <button
                   key={priority}
@@ -293,7 +304,7 @@ export default function Home() {
                       : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                   }`}
                 >
-                  {priority === "ALL" ? "All Tasks" : `${priority} Priority`}
+                  {priority === "ALL" ? "All" : `${priority}`}
                 </button>
               ))}
               
@@ -616,6 +627,41 @@ export default function Home() {
 
           </div>
         )}
+
+        {/* NAYA: Dashboard view change condition */}
+        {!isLoading && tasks.length > 0 && (
+          <div className="pt-6">
+            <div className="flex justify-end mb-4 px-2">
+              <div className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex items-center gap-1 border border-zinc-200/40 dark:border-zinc-700/50 shadow-inner">
+                <button 
+                  onClick={() => setCurrentView("KANBAN")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    currentView === "KANBAN" 
+                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-sm" 
+                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <Kanban className="w-3.5 h-3.5" /> Kanban
+                </button>
+                <button 
+                  onClick={() => setCurrentView("CALENDAR")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    currentView === "CALENDAR" 
+                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-sm" 
+                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" /> Calendar View
+                </button>
+              </div>
+            </div>
+
+            {currentView === "CALENDAR" && (
+              <TaskCalendar tasks={filteredTasks} onSuccess={fetchTasks} />
+            )}
+          </div>
+        )}
+
       </div>
 
       <ChatAssistant />
