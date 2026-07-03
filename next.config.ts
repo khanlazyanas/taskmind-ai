@@ -3,11 +3,12 @@ import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: process.env.NODE_ENV === "development", // Dev mode mein slow na ho isliye band rakha hai
+  disable: process.env.NODE_ENV === "development", 
 });
 
 const nextConfig: NextConfig = {
-  // Tumhari baaki config yahan rahegi
+  // NAYA: Turbopack aur Webpack ke clash ko fix karne ke liye
+  turbopack: {}, 
   images: {
     remotePatterns: [
       {
