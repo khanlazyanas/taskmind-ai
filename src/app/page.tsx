@@ -81,7 +81,7 @@ export default function LandingPage() {
                   Launch TaskMind <ArrowRight className="w-5 h-5" />
                 </Link>
               )}
-              <a href="https://github.com" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white font-bold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2">
+              <a href="https://github.com/khanlazyanas/taskmind-ai" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white font-bold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2">
                 <Code className="w-5 h-5" /> View Source
               </a>
             </div>
@@ -170,8 +170,8 @@ export default function LandingPage() {
           <p>© {new Date().getFullYear()} TaskMind AI. Built for the modern web.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Twitter</a>
-            <a href="#" className="hover:text-zinc-900 dark:hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Portfolio</a>
+            <a href="https://github.com/khanlazyanas" className="hover:text-zinc-900 dark:hover:text-white transition-colors">GitHub</a>
+            <a href="https://portfolio-frontend-3qay.vercel.app" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Portfolio</a>
           </div>
         </footer>
 
