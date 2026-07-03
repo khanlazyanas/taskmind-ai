@@ -56,63 +56,63 @@ export default function CreateTaskModal({ onSuccess }: CreateTaskModalProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-full px-6 py-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-zinc-950 text-white hover:bg-zinc-800 hover:-translate-y-0.5">
+        <Button className="rounded-full px-6 py-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 hover:-translate-y-0.5 font-bold">
           <Plus className="w-5 h-5 mr-2" /> New Initiative
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-zinc-200">
+      <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-8 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-extrabold flex items-center gap-2 text-zinc-900">
+          <DialogTitle className="text-2xl font-extrabold flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
             Create Initiative <Sparkles className="w-5 h-5 text-amber-500" />
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 mt-2 font-medium">
+          <DialogDescription className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
             Describe your task. Soon, our AI will automatically assign priority and tags based on this.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-3">
-            <Label htmlFor="title" className="text-zinc-700 font-bold">Initiative Title</Label>
+            <Label htmlFor="title" className="text-zinc-700 dark:text-zinc-300 font-bold">Initiative Title</Label>
             <Input
               id="title"
               placeholder="e.g. Setup payment webhook integration"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-xl border-zinc-200 shadow-sm focus-visible:ring-zinc-900 px-4 py-6"
+              className="rounded-xl border-zinc-200 dark:border-zinc-700 shadow-sm focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 px-4 py-6 bg-transparent dark:text-zinc-100 dark:placeholder:text-zinc-600"
               required
             />
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="description" className="text-zinc-700 font-bold">Context (for AI)</Label>
+            <Label htmlFor="description" className="text-zinc-700 dark:text-zinc-300 font-bold">Context (for AI)</Label>
             <Textarea
               id="description"
               placeholder="Provide details so AI can accurately tag and prioritize..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="rounded-xl border-zinc-200 shadow-sm focus-visible:ring-zinc-900 min-h-[120px] p-4"
+              className="rounded-xl border-zinc-200 dark:border-zinc-700 shadow-sm focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 min-h-[120px] p-4 bg-transparent dark:text-zinc-100 dark:placeholder:text-zinc-600"
             />
           </div>
 
           {/* NAYA: Due Date Input Field */}
           <div className="space-y-3">
-            <Label htmlFor="dueDate" className="text-zinc-700 font-bold flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-zinc-500" /> Due Date <span className="text-zinc-400 font-normal">(Optional)</span>
+            <Label htmlFor="dueDate" className="text-zinc-700 dark:text-zinc-300 font-bold flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-zinc-500 dark:text-zinc-400" /> Due Date <span className="text-zinc-400 dark:text-zinc-500 font-normal">(Optional)</span>
             </Label>
             <Input
               id="dueDate"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="rounded-xl border-zinc-200 shadow-sm focus-visible:ring-zinc-900 px-4 py-5 text-zinc-700"
+              className="rounded-xl border-zinc-200 dark:border-zinc-700 shadow-sm focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 px-4 py-5 text-zinc-700 dark:text-zinc-200 bg-transparent dark:[color-scheme:dark]"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl py-6 bg-zinc-950 hover:bg-zinc-800 text-white font-bold transition-all shadow-md"
+            className="w-full rounded-xl py-6 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold transition-all shadow-md"
           >
             {isSubmitting ? (
               <>
