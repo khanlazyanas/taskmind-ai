@@ -4,9 +4,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react"; // NAYA: Download icon import kiya
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import EditTaskModal from "@/components/EditTaskModal";
+import ChatAssistant from "@/components/ChatAssistant"; // NAYA: Import add kiya
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -115,16 +116,13 @@ export default function Home() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  // NAYA: Tasks ko CSV format mein download karne ka logic
   const exportTasksToCSV = () => {
     if (tasks.length === 0) return;
 
-    // Excel Headers
     const headers = ["Title", "Description", "Status", "Priority", "Due Date", "Tags"];
     const csvRows = [headers.join(",")];
 
     tasks.forEach((task) => {
-      // Data format set kar rahe hain taaki comma hone par bhi layout kharab na ho
       const row = [
         `"${task.title.replace(/"/g, '""')}"`,
         `"${(task.description || "").replace(/"/g, '""')}"`,
@@ -293,7 +291,6 @@ export default function Home() {
                 </button>
               ))}
               
-              {/* NAYA: Export to CSV Button */}
               <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block"></div>
               <button
                 onClick={exportTasksToCSV}
@@ -614,6 +611,10 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* NAYA: Chat Assistant Yahan Add Kiya */}
+      <ChatAssistant />
+      
     </main>
   );
 }
