@@ -4,10 +4,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react"; 
 import CreateTaskModal from "@/components/CreateTaskModal";
 import EditTaskModal from "@/components/EditTaskModal";
-import ChatAssistant from "@/components/ChatAssistant"; // NAYA: Import add kiya
+import ChatAssistant from "@/components/ChatAssistant"; 
+import TaskAnalytics from "@/components/TaskAnalytics"; // NAYA: Chart Import
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -224,43 +225,48 @@ export default function Home() {
         </div>
 
         {!isLoading && tasks.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-sm flex items-center gap-4">
-              <div className="p-3 bg-zinc-100/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 rounded-2xl">
-                <ListTodo className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Total Tasks</p>
-                <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{totalTasks}</h3>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-blue-50 dark:border-blue-900/30 shadow-sm flex items-center gap-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">In Progress</p>
-                <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{tasks.filter(t => t.status === "IN_PROGRESS").length}</h3>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-green-50 dark:border-green-900/30 shadow-sm flex flex-col justify-center gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
-                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Completion</p>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-zinc-100/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 rounded-2xl">
+                  <ListTodo className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-extrabold text-green-600 dark:text-green-400">{completionPercentage}%</span>
+                <div>
+                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Total Tasks</p>
+                  <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{totalTasks}</h3>
+                </div>
               </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-green-500 dark:bg-green-400 h-2 rounded-full transition-all duration-1000 ease-out" 
-                  style={{ width: `${completionPercentage}%` }}
-                />
+              
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-blue-50 dark:border-blue-900/30 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">In Progress</p>
+                  <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{tasks.filter(t => t.status === "IN_PROGRESS").length}</h3>
+                </div>
+              </div>
+              
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-green-50 dark:border-green-900/30 shadow-sm flex flex-col justify-center gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
+                    <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Completion</p>
+                  </div>
+                  <span className="text-lg font-extrabold text-green-600 dark:text-green-400">{completionPercentage}%</span>
+                </div>
+                <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-green-500 dark:bg-green-400 h-2 rounded-full transition-all duration-1000 ease-out" 
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+
+            {/* NAYA: Charts Render Here */}
+            <TaskAnalytics tasks={tasks} />
+          </>
         )}
 
         {!isLoading && tasks.length > 0 && (
@@ -612,7 +618,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* NAYA: Chat Assistant Yahan Add Kiya */}
       <ChatAssistant />
       
     </main>
