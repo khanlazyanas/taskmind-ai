@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle } from "lucide-react";
+import { Sparkles, Clock, Bot, LayoutGrid, Loader2, ArrowRight, ArrowLeft, CheckCircle, Trash2, ListTodo, TrendingUp, CheckCircle2, Search, AlertCircle, Download } from "lucide-react"; // NAYA: Download icon import kiya
 import CreateTaskModal from "@/components/CreateTaskModal";
 import EditTaskModal from "@/components/EditTaskModal";
 import { UserButton } from "@clerk/nextjs";
@@ -115,6 +115,39 @@ export default function Home() {
     e.dataTransfer.dropEffect = "move";
   };
 
+  // NAYA: Tasks ko CSV format mein download karne ka logic
+  const exportTasksToCSV = () => {
+    if (tasks.length === 0) return;
+
+    // Excel Headers
+    const headers = ["Title", "Description", "Status", "Priority", "Due Date", "Tags"];
+    const csvRows = [headers.join(",")];
+
+    tasks.forEach((task) => {
+      // Data format set kar rahe hain taaki comma hone par bhi layout kharab na ho
+      const row = [
+        `"${task.title.replace(/"/g, '""')}"`,
+        `"${(task.description || "").replace(/"/g, '""')}"`,
+        task.status,
+        task.priority,
+        task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No Date",
+        `"${task.tags.join(", ")}"`
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    const csvData = csvRows.join("\n");
+    const blob = new Blob([csvData], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `TaskMind_Export_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const totalTasks = tasks.length;
   const globalDoneTasks = tasks.filter((t) => t.status === "DONE");
   const completionPercentage = totalTasks === 0 ? 0 : Math.round((globalDoneTasks.length / totalTasks) * 100);
@@ -164,11 +197,9 @@ export default function Home() {
   };
 
   return (
-    // Body Background (Light to Dark)
     <main className="min-h-screen bg-[#FAFAFA] dark:bg-zinc-950 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:16px_16px] text-zinc-950 dark:text-zinc-100 font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-blue-500/30 pb-20 transition-colors duration-300">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-10">
         
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-white/50 dark:border-zinc-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
@@ -194,7 +225,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats Row */}
         {!isLoading && tasks.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-sm flex items-center gap-4">
@@ -235,7 +265,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search and Filters */}
         {!isLoading && tasks.length > 0 && (
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-zinc-900 p-2 pl-4 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center gap-3 w-full md:w-1/3">
@@ -263,6 +292,15 @@ export default function Home() {
                   {priority === "ALL" ? "All Tasks" : `${priority} Priority`}
                 </button>
               ))}
+              
+              {/* NAYA: Export to CSV Button */}
+              <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block"></div>
+              <button
+                onClick={exportTasksToCSV}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/50 shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
             </div>
           </div>
         )}
