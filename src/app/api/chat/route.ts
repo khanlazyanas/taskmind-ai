@@ -26,19 +26,12 @@ export async function POST(req: Request) {
     const tasks = await Task.find({ userId }).lean();
 
     const taskContext = tasks.map(t => 
-      `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority}, Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'None'})`
+      `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority})`
     ).join("\n");
 
     const todayStr = new Date().toLocaleDateString();
 
-    // Is message mein task creation command hai ya nahi, check karne ke liye flag
-    const isTaskCreation = 
-      message.toLowerCase().includes("add") || 
-      message.toLowerCase().includes("create") || 
-      message.toLowerCase().includes("bana") || 
-      message.toLowerCase().includes("schedule");
-
-    // 4. Gemini Function Calling / Tools Definition
+    // 4. Model Setup - FIXED: 'gemini-1.5-flash' use kiya hai taaki Tools perfectly kaam karein
     const taskTools = {
       functionDeclarations: [
         {
@@ -47,9 +40,8 @@ export async function POST(req: Request) {
           parameters: {
             type: SchemaType.OBJECT, 
             properties: {
-              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, 
-              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, 
-              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD)." }, 
+              title: { type: SchemaType.STRING, description: "The exact task description." }, 
+              priority: { type: SchemaType.STRING, description: "Must be 'low', 'medium', or 'high'." }
             },
             required: ["title"],
           },
@@ -57,35 +49,19 @@ export async function POST(req: Request) {
       ],
     };
 
-    // NAYA & POWERFUL UPGRADE: Agar user task bana raha hai, toh force karo tool use karne ke liye!
-    const modelConfig: any = {
-      model: "gemini-2.5-flash",
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
       tools: [taskTools as any],
-    };
-
-    if (isTaskCreation) {
-      modelConfig.toolConfig = {
-        functionCallingConfig: {
-          mode: "ANY", // <-- AI KO FORCED FUNCTION CALLING PAR DAAL DIYA (Ab wo text jhooth nahi bol payega)
-          allowedFunctionNames: ["createTask"]
-        }
-      };
-    }
-
-    const model = genAI.getGenerativeModel(modelConfig);
+    });
 
     const prompt = `
-      You are 'TaskMind AI', a smart project manager agent.
-      Today's date is: ${todayStr}
-      Current user task list:
-      ${taskContext || "No tasks currently."}
-
+      You are 'TaskMind AI'. Today's date is: ${todayStr}.
+      User tasks: ${taskContext || "No tasks currently."}
       User command: "${message}"
 
-      INSTRUCTIONS:
-      Extract the title, priority, and due date from the user command to fill the 'createTask' tool parameters.
-      - If priority is missing, set "medium".
-      - If date is missing, leave it blank.
+      CRITICAL RULES:
+      If the user wants to add/create a task, you MUST call the 'createTask' tool.
+      Do NOT say "I have added it" in text. Call the tool!
     `;
 
     // 5. Execute Gemini AI
@@ -95,45 +71,58 @@ export async function POST(req: Request) {
 
     let shouldRefresh = false;
     let aiResponse = "";
+    
+    // Check agar user task banane ko keh raha hai
+    const msgLower = message.toLowerCase();
+    const isAddingTask = msgLower.includes("add") || msgLower.includes("create") || msgLower.includes("bana");
 
-    // 6. Tool Call Handling
+    // 6. Execution & Fallback Logic (The Brahmastra)
     if (functionCalls && functionCalls.length > 0) {
+      // SCENARIO A: AI ne baat mani aur Tool chalaya (Ideal Case)
       const call = functionCalls[0];
-      
       if (call.name === "createTask") {
         const args = call.args as any;
         
-        let finalDate = null;
-        if (args.dueDate) {
-            const parsed = new Date(args.dueDate);
-            if (!isNaN(parsed.getTime())) {
-                finalDate = parsed;
-            }
-        }
-
-        // Real MongoDB Entry
         await Task.create({
           userId,
           title: args.title,
           priority: args.priority || "medium",
-          status: "todo",
-          dueDate: finalDate
+          status: "todo"
         });
 
         shouldRefresh = true;
-        
-        // Response language check
-        const isHindi = message.match(/[\u0600-\u06FF\u0900-\u097F]/) || message.toLowerCase().includes("bana") || message.toLowerCase().includes("bhai");
-        aiResponse = isHindi 
-          ? `Done bhai! Task "${args.title}" successfully add ho gaya hai workspace me. 🚀`
-          : `Done! Task "${args.title}" has been successfully added to your workspace. 🚀`;
+        aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya hai!`;
       }
+    } else if (isAddingTask) {
+      // SCENARIO B: AI ne dhokha diya aur text generate kiya (Manual Override)
+      // Hum khud user ke message se task title nikal kar database mein thok denge!
+      let extractedTitle = message
+        .replace(/add a new task to my list:?/i, "")
+        .replace(/add a new task:?/i, "")
+        .replace(/add task:?/i, "")
+        .replace(/create a task:?/i, "")
+        .replace(/.*bana do:?/i, "")
+        .trim();
+        
+      if (!extractedTitle || extractedTitle.length < 2) {
+        extractedTitle = message; // Agar title parse na ho toh pura message daal do
+      }
+
+      await Task.create({
+        userId,
+        title: extractedTitle,
+        priority: "medium",
+        status: "todo"
+      });
+
+      shouldRefresh = true;
+      aiResponse = `✅ Done bhai! Task "${extractedTitle}" add kar diya gaya hai.`;
     } else {
-      // Normal chat handle agar creation command nahi hai
+      // SCENARIO C: Normal chat chal rahi hai (eg: "What are my tasks?")
       try {
         aiResponse = response.text();
       } catch (e) {
-        aiResponse = "I can help you manage your tasks. Try saying 'Add a new task: ...'";
+        aiResponse = "Main tumhari task list manage karne mein help kar sakta hoon. Try 'Add a task...'";
       }
     }
 
