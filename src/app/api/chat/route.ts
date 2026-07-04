@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     const todayStr = new Date().toLocaleDateString();
 
-    // 4. Model Setup - FIXED: 'gemini-1.5-flash' use kiya hai taaki Tools perfectly kaam karein
+    // 4. Model Setup - FIXED: Wapas 'gemini-2.5-flash' laga diya gaya hai!
     const taskTools = {
       functionDeclarations: [
         {
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     };
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       tools: [taskTools as any],
     });
 
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     // 5. Execute Gemini AI
     const result = await model.generateContent(prompt);
     const response = result.response;
-    const functionCalls = response.functionCalls();
+    const functionCalls = response.functionCalls ? response.functionCalls() : [];
 
     let shouldRefresh = false;
     let aiResponse = "";
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
     // 6. Execution & Fallback Logic (The Brahmastra)
     if (functionCalls && functionCalls.length > 0) {
-      // SCENARIO A: AI ne baat mani aur Tool chalaya (Ideal Case)
+      // SCENARIO A: AI ne Tool chalaya
       const call = functionCalls[0];
       if (call.name === "createTask") {
         const args = call.args as any;
@@ -94,8 +94,7 @@ export async function POST(req: Request) {
         aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya hai!`;
       }
     } else if (isAddingTask) {
-      // SCENARIO B: AI ne dhokha diya aur text generate kiya (Manual Override)
-      // Hum khud user ke message se task title nikal kar database mein thok denge!
+      // SCENARIO B: AI ne Tool nahi chalaya (Manual Override)
       let extractedTitle = message
         .replace(/add a new task to my list:?/i, "")
         .replace(/add a new task:?/i, "")
@@ -105,7 +104,7 @@ export async function POST(req: Request) {
         .trim();
         
       if (!extractedTitle || extractedTitle.length < 2) {
-        extractedTitle = message; // Agar title parse na ho toh pura message daal do
+        extractedTitle = message; 
       }
 
       await Task.create({
@@ -118,7 +117,7 @@ export async function POST(req: Request) {
       shouldRefresh = true;
       aiResponse = `✅ Done bhai! Task "${extractedTitle}" add kar diya gaya hai.`;
     } else {
-      // SCENARIO C: Normal chat chal rahi hai (eg: "What are my tasks?")
+      // SCENARIO C: Normal chat
       try {
         aiResponse = response.text();
       } catch (e) {
