@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai"; // <-- UPDATE: SchemaType add kiya hai
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
@@ -25,12 +25,10 @@ export async function POST(req: Request) {
     await connectToDatabase();
     const tasks = await Task.find({ userId }).lean();
 
-    // Tasks ko ek simple readable format mein convert karo taaki AI samajh sake
     const taskContext = tasks.map(t => 
       `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority}, Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'None'})`
     ).join("\n");
 
-    // Aaj ki date provide karein taaki relative phrases (like "tomorrow", "next monday") AI samajh sake
     const todayStr = new Date().toLocaleDateString();
 
     // 4. Gemini Function Calling / Tools Definition
@@ -38,13 +36,13 @@ export async function POST(req: Request) {
       functionDeclarations: [
         {
           name: "createTask",
-          description: "Create a new task in the database when the user explicitly asks to add, save, or create a task.",
+          description: "Create a new task in the database. MUST be called when user asks to add, save, or create a task.",
           parameters: {
             type: SchemaType.OBJECT, 
             properties: {
-              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, 
-              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, 
-              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD) for when the task is due based on current date context." }, 
+              title: { type: SchemaType.STRING, description: "The title of the task." }, 
+              priority: { type: SchemaType.STRING, description: "Must be 'low', 'medium', or 'high'." }, 
+              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD)." }, 
             },
             required: ["title"],
           },
@@ -52,34 +50,28 @@ export async function POST(req: Request) {
       ],
     };
 
-    // Gemini Model instance with Tools setup
+    // Gemini Model instance
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      tools: [taskTools as any] 
+      tools: [taskTools as any],
     });
 
+    // SUPER STRICT PROMPT
     const prompt = `
-      You are 'TaskMind AI', a smart, helpful, and highly efficient personal project manager assistant.
-      The user is asking you a question or giving you a direct command to manage their tasks.
-      
-      Today's date is: ${todayStr}
+      System Role: You are 'TaskMind AI', a strict backend execution agent.
+      Today's date: ${todayStr}
+      Current tasks: ${taskContext || "None."}
+      User's command: "${message}"
 
-      Here is the user's current task list:
-      ${taskContext || "The user currently has no tasks."}
-
-      User's Question/Command: "${message}"
-
-      STRICT INSTRUCTIONS FOR YOUR RESPONSE:
-      1. LANGUAGE: Always reply in the exact same language the user is speaking. If the user writes in Hindi/Hinglish, you MUST reply in natural, friendly Hinglish.
-      2. TASK CREATION: If the user asks to add, create, or schedule a task, YOU MUST INVOKE the 'createTask' tool IMMEDIATELY. 
-      3. NO QUESTIONS: DO NOT ask the user for missing details like priority or due date. 
-         - If priority is not explicitly mentioned, silently default to "medium".
-         - If a date/time is mentioned (like "kal", "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool. 
-         - If no date is mentioned, leave it empty.
-      4. Just execute the tool! Do not chat unnecessarily before executing the tool.
+      CRITICAL RULES (FAILING THESE WILL CRASH THE SYSTEM):
+      1. MANDATORY TOOL USAGE: If the user asks to add, create, schedule, or put a task on the list, YOU MUST CALL THE 'createTask' TOOL.
+      2. NO HALLUCINATIONS: NEVER reply with plain text saying "I have added it to your list". If you do not call the tool, the task is NOT added. Call the tool!
+      3. DEFAULTS: If priority is missing, use "medium". If date is missing, leave it empty. Do not ask for them.
+      4. GENERAL CHAT: ONLY reply with normal text if the user is asking a general question (like "what are my tasks?") and NOT asking to create a task.
+      5. LANGUAGE: If you reply with text, match the user's language (Hinglish/English).
     `;
 
-    // Initial check query execution
+    // 5. Execute Gemini AI
     const result = await model.generateContent(prompt);
     const response = result.response;
     const functionCalls = response.functionCalls();
@@ -90,17 +82,16 @@ export async function POST(req: Request) {
     try {
       aiResponse = response.text();
     } catch (e) {
-      // Pure function call alerts won't return text in initial step, which is fine.
+      // Ignored if text doesn't exist
     }
 
-    // 5. Tool Call Handling
+    // 6. Tool Call Handling
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
       
       if (call.name === "createTask") {
         const args = call.args as any;
         
-        // Date ko safe tarike se parse karna taaki database crash na ho
         let finalDate = null;
         if (args.dueDate) {
             const parsed = new Date(args.dueDate);
@@ -109,7 +100,7 @@ export async function POST(req: Request) {
             }
         }
 
-        // Database mein Task entry execute karo
+        // Database mein Task save karo
         await Task.create({
           userId,
           title: args.title,
@@ -118,15 +109,14 @@ export async function POST(req: Request) {
           dueDate: finalDate
         });
 
-        // Trigger dynamic layout sync for dashboard
         shouldRefresh = true;
-
-        // CRASH FIX: Bina second API call kiye direct confirm message de diya 
         aiResponse = `Done! Task "${args.title}" has been successfully added to your workspace. 🚀`;
       }
+    } else if (message.toLowerCase().includes("add") || message.toLowerCase().includes("create") || message.toLowerCase().includes("bana")) {
+      // FALLBACK SAFEGUARD: Agar AI fir se hawabaazi kare, toh usko pakdo
+      aiResponse = "System Error: Task save nahi ho paya. Please ek baar dobara try karo (eg: 'Add task: ...')";
     }
 
-    // Response ke sath refresh flag bhej rahe hain taaki screen load ho sake
     return NextResponse.json({ reply: aiResponse || "Understood!", refresh: shouldRefresh });
 
   } catch (error) {
