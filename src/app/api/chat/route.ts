@@ -69,15 +69,15 @@ export async function POST(req: Request) {
 
       User's Question/Command: "${message}"
 
-      Instructions for your response:
-      1. Be concise, friendly, and professional.
-      2. Answer specifically based on the task list provided above.
-      3. If they ask to add, create, or schedule a task, invoke the 'createTask' tool immediately.
-      4. If they ask what to do next, suggest high priority or overdue/due-today tasks.
-      5. Use formatting (bullet points, bold text) to make it easy to read.
-      6. Do not hallucinate tasks that don't exist in the list.
+      STRICT INSTRUCTIONS FOR YOUR RESPONSE:
+      1. LANGUAGE: Always reply in the exact same language the user is speaking. If the user writes in Hindi/Hinglish, you MUST reply in natural, friendly Hinglish.
+      2. TASK CREATION: If the user asks to add, create, or schedule a task, YOU MUST INVOKE the 'createTask' tool IMMEDIATELY. 
+      3. NO QUESTIONS: DO NOT ask the user for missing details like priority or due date. 
+         - If priority is not explicitly mentioned, silently default to "medium".
+         - If a date/time is mentioned (like "kal", "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool. 
+         - If no date is mentioned, leave it empty.
+      4. Just execute the tool! Do not chat unnecessarily before executing the tool.
     `;
-
     // Initial check query execution
     const result = await model.generateContent(prompt);
     const response = result.response;
