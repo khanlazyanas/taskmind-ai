@@ -36,9 +36,9 @@ export async function POST(req: Request) {
       ],
     };
 
-    // 🚀 STABLE MODEL UPDATE HERE
+    // 🚀 UNIVERSAL MODEL UPDATE: 'gemini-pro' har version par support karta hai
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-pro",
       tools: [taskTools],
     });
 
