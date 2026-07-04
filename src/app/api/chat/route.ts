@@ -40,11 +40,11 @@ export async function POST(req: Request) {
           name: "createTask",
           description: "Create a new task in the database when the user explicitly asks to add, save, or create a task.",
           parameters: {
-            type: SchemaType.OBJECT, // <-- UPDATE: String ki jagah SchemaType.OBJECT
+            type: SchemaType.OBJECT, 
             properties: {
-              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, // <-- UPDATE
-              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, // <-- UPDATE
-              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD) for when the task is due based on current date context." }, // <-- UPDATE
+              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, 
+              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, 
+              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD) for when the task is due based on current date context." }, 
             },
             required: ["title"],
           },
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     // Gemini Model instance with Tools setup
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      tools: [taskTools as any] // <-- UPDATE: Type safety ke liye 'as any' add kiya taaki aage koi error na aaye
+      tools: [taskTools as any] 
     });
 
     const prompt = `
@@ -78,6 +78,7 @@ export async function POST(req: Request) {
          - If no date is mentioned, leave it empty.
       4. Just execute the tool! Do not chat unnecessarily before executing the tool.
     `;
+
     // Initial check query execution
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -99,40 +100,34 @@ export async function POST(req: Request) {
       if (call.name === "createTask") {
         const args = call.args as any;
         
+        // Date ko safe tarike se parse karna taaki database crash na ho
+        let finalDate = null;
+        if (args.dueDate) {
+            const parsed = new Date(args.dueDate);
+            if (!isNaN(parsed.getTime())) {
+                finalDate = parsed;
+            }
+        }
+
         // Database mein Task entry execute karo
         await Task.create({
           userId,
           title: args.title,
           priority: args.priority || "medium",
           status: "todo",
-          dueDate: args.dueDate ? new Date(args.dueDate) : null
+          dueDate: finalDate
         });
 
         // Trigger dynamic layout sync for dashboard
         shouldRefresh = true;
 
-        // Multi-turn turn setup: Tool ki response wapas Gemini ko bhejo taaki wo badhiya confirmation response generate kare
-        const history = [
-          { role: "user", parts: [{ text: prompt }] },
-          { role: "model", parts: [{ functionCall: call }] },
-          { 
-            role: "user", 
-            parts: [{ 
-              functionResponse: { 
-                name: "createTask", 
-                response: { success: true, message: `Successfully created task: ${args.title}` } 
-              } 
-            }] 
-          }
-        ];
-
-        const finalResult = await model.generateContent({ contents: history });
-        aiResponse = finalResult.response.text();
+        // CRASH FIX: Bina second API call kiye direct confirm message de diya 
+        aiResponse = `Done! Task "${args.title}" has been successfully added to your workspace. 🚀`;
       }
     }
 
     // Response ke sath refresh flag bhej rahe hain taaki screen load ho sake
-    return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
+    return NextResponse.json({ reply: aiResponse || "Understood!", refresh: shouldRefresh });
 
   } catch (error) {
     console.error("Chat API Error:", error);
