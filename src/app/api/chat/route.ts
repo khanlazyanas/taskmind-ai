@@ -36,9 +36,9 @@ export async function POST(req: Request) {
       ],
     };
 
-    // 🚀 UNIVERSAL MODEL UPDATE: 'gemini-pro' har version par support karta hai
+    // 🚀 FIXED: Latest aur sabse fast model laga diya hai!
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro",
+      model: "gemini-1.5-flash",
       tools: [taskTools],
     });
 
