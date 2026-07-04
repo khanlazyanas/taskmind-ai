@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs';
 import { ThemeProvider } from "@/components/ThemeProvider"; // NAYA IMPORT
+import InstallPWA from "@/components/InstallPWA"; // <-- NAYA: InstallPWA import kiya
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <InstallPWA /> {/* <-- NAYA: Yahan par Install Button laga diya gaya hai */}
             {children}
           </ThemeProvider>
         </body>
