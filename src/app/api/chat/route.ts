@@ -1,34 +1,50 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai"; // <-- UPDATE: SchemaType add kiya hai
 import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
   try {
+    // 1. User Auth Check
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ reply: "Unauthorized user." });
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
+    // 2. User ka message receive karo
     const body = await req.json();
     const { message } = body;
-    if (!message) return NextResponse.json({ reply: "Message is required." });
+    if (!message) {
+      return new NextResponse("Message is required", { status: 400 });
+    }
 
+    // 3. User ke saare tasks fetch karo (Context ke liye)
     await connectToDatabase();
-    
     const tasks = await Task.find({ userId }).lean();
-    const taskContext = tasks.map((t: any) => `- ${t.title}`).join("\n");
 
-    const taskTools: any = {
+    // Tasks ko ek simple readable format mein convert karo taaki AI samajh sake
+    const taskContext = tasks.map(t => 
+      `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority}, Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'None'})`
+    ).join("\n");
+
+    // Aaj ki date provide karein taaki relative phrases (like "tomorrow", "next monday") AI samajh sake
+    const todayStr = new Date().toLocaleDateString();
+
+    // 4. Gemini Function Calling / Tools Definition
+    const taskTools = {
       functionDeclarations: [
         {
           name: "createTask",
-          description: "Create a new task in the database.",
+          description: "Create a new task in the database when the user explicitly asks to add, save, or create a task.",
           parameters: {
-            type: SchemaType.OBJECT, 
+            type: SchemaType.OBJECT, // <-- UPDATE: String ki jagah SchemaType.OBJECT
             properties: {
-              title: { type: SchemaType.STRING, description: "Exact task title" }
+              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, // <-- UPDATE
+              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, // <-- UPDATE
+              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD) for when the task is due based on current date context." }, // <-- UPDATE
             },
             required: ["title"],
           },
@@ -36,73 +52,90 @@ export async function POST(req: Request) {
       ],
     };
 
-    // 🚀 FIXED: Latest aur sabse fast model laga diya hai!
+    // Gemini Model instance with Tools setup
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      tools: [taskTools],
+      model: "gemini-2.5-flash",
+      tools: [taskTools as any] // <-- UPDATE: Type safety ke liye 'as any' add kiya taaki aage koi error na aaye
     });
 
-    const prompt = `Context: ${taskContext}. Command: "${message}". Call 'createTask' tool immediately if adding a task.`;
+    const prompt = `
+      You are 'TaskMind AI', a smart, helpful, and highly efficient personal project manager assistant.
+      The user is asking you a question or giving you a direct command to manage their tasks.
+      
+      Today's date is: ${todayStr}
 
+      Here is the user's current task list:
+      ${taskContext || "The user currently has no tasks."}
+
+      User's Question/Command: "${message}"
+
+      STRICT INSTRUCTIONS FOR YOUR RESPONSE:
+      1. LANGUAGE: Always reply in the exact same language the user is speaking. If the user writes in Hindi/Hinglish, you MUST reply in natural, friendly Hinglish.
+      2. TASK CREATION: If the user asks to add, create, or schedule a task, YOU MUST INVOKE the 'createTask' tool IMMEDIATELY. 
+      3. NO QUESTIONS: DO NOT ask the user for missing details like priority or due date. 
+         - If priority is not explicitly mentioned, silently default to "medium".
+         - If a date/time is mentioned (like "kal", "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool. 
+         - If no date is mentioned, leave it empty.
+      4. Just execute the tool! Do not chat unnecessarily before executing the tool.
+    `;
+    // Initial check query execution
     const result = await model.generateContent(prompt);
     const response = result.response;
-    
+    const functionCalls = response.functionCalls();
+
     let shouldRefresh = false;
     let aiResponse = "";
 
-    const responseData = response as any;
-    let calls: any[] = [];
-    if (responseData.functionCalls && typeof responseData.functionCalls === "function") {
-        calls = responseData.functionCalls();
-    } else if (Array.isArray(responseData.functionCalls)) {
-        calls = responseData.functionCalls;
+    try {
+      aiResponse = response.text();
+    } catch (e) {
+      // Pure function call alerts won't return text in initial step, which is fine.
     }
 
-    const isAddingTask = message.toLowerCase().includes("add") || message.toLowerCase().includes("create");
-
-    if (calls && calls.length > 0) {
-      const args = calls[0].args;
+    // 5. Tool Call Handling
+    if (functionCalls && functionCalls.length > 0) {
+      const call = functionCalls[0];
       
-      await Task.create({
-        userId,
-        title: args.title,
-        priority: "medium",
-        status: "todo",
-        dueDate: null
-      });
+      if (call.name === "createTask") {
+        const args = call.args as any;
+        
+        // Database mein Task entry execute karo
+        await Task.create({
+          userId,
+          title: args.title,
+          priority: args.priority || "medium",
+          status: "todo",
+          dueDate: args.dueDate ? new Date(args.dueDate) : null
+        });
 
-      shouldRefresh = true;
-      aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya!`;
+        // Trigger dynamic layout sync for dashboard
+        shouldRefresh = true;
 
-    } else if (isAddingTask) {
-      let extTitle = message.replace(/add a new task to my list:?/i, "").replace(/add a new task:?/i, "").trim();
-      if (!extTitle) extTitle = "New Task";
+        // Multi-turn turn setup: Tool ki response wapas Gemini ko bhejo taaki wo badhiya confirmation response generate kare
+        const history = [
+          { role: "user", parts: [{ text: prompt }] },
+          { role: "model", parts: [{ functionCall: call }] },
+          { 
+            role: "user", 
+            parts: [{ 
+              functionResponse: { 
+                name: "createTask", 
+                response: { success: true, message: `Successfully created task: ${args.title}` } 
+              } 
+            }] 
+          }
+        ];
 
-      await Task.create({
-        userId,
-        title: extTitle,
-        priority: "medium",
-        status: "todo",
-        dueDate: null
-      });
-
-      shouldRefresh = true;
-      aiResponse = `✅ Done bhai! Task "${extTitle}" add kar diya gaya hai.`;
-
-    } else {
-      try {
-        aiResponse = response.text();
-      } catch (e) {
-        aiResponse = "Main task manager hoon. Mujhe batao kaunsa task add karna hai.";
+        const finalResult = await model.generateContent({ contents: history });
+        aiResponse = finalResult.response.text();
       }
     }
 
+    // Response ke sath refresh flag bhej rahe hain taaki screen load ho sake
     return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
 
-  } catch (error: any) {
-    return NextResponse.json({ 
-      reply: `⚠️ Database/API Error: ${error.message}`, 
-      refresh: false 
-    });
+  } catch (error) {
+    console.error("Chat API Error:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
