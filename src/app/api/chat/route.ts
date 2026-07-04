@@ -4,7 +4,6 @@ import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 
-// Ensure string type to avoid TS errors
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function POST(req: Request) {
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
     
-    // Fetch user tasks for context safely
     const tasks = await Task.find({ userId }).lean();
     const taskContext = tasks.map((t: any) => `- ${t.title}`).join("\n");
 
@@ -38,8 +36,9 @@ export async function POST(req: Request) {
       ],
     };
 
+    // 🚀 STABLE MODEL UPDATE HERE
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       tools: [taskTools],
     });
 
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
     let shouldRefresh = false;
     let aiResponse = "";
 
-    // SUPER SAFE Function Call extraction to avoid Vercel TS Build errors
     const responseData = response as any;
     let calls: any[] = [];
     if (responseData.functionCalls && typeof responseData.functionCalls === "function") {
@@ -77,7 +75,6 @@ export async function POST(req: Request) {
       aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya!`;
 
     } else if (isAddingTask) {
-      // Manual Override logic (failsafe)
       let extTitle = message.replace(/add a new task to my list:?/i, "").replace(/add a new task:?/i, "").trim();
       if (!extTitle) extTitle = "New Task";
 
@@ -100,11 +97,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Always returns 200 OK so frontend never throws 'Oops'
     return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
 
   } catch (error: any) {
-    // CRITICAL: Return as JSON with 200 status so it prints IN THE CHAT
     return NextResponse.json({ 
       reply: `⚠️ Database/API Error: ${error.message}`, 
       refresh: false 
