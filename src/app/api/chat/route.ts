@@ -4,35 +4,25 @@ import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// Ensure string type to avoid TS errors
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function POST(req: Request) {
   try {
-    // 1. User Auth Check
     const { userId } = await auth();
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ reply: "Unauthorized user." });
 
-    // 2. User ka message receive karo
     const body = await req.json();
     const { message } = body;
-    if (!message) {
-      return new NextResponse("Message is required", { status: 400 });
-    }
+    if (!message) return NextResponse.json({ reply: "Message is required." });
 
-    // 3. User ke saare tasks fetch karo (Context ke liye)
     await connectToDatabase();
+    
+    // Fetch user tasks for context safely
     const tasks = await Task.find({ userId }).lean();
+    const taskContext = tasks.map((t: any) => `- ${t.title}`).join("\n");
 
-    const taskContext = tasks.map(t => 
-      `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority})`
-    ).join("\n");
-
-    const todayStr = new Date().toLocaleDateString();
-
-    // 4. Model Setup - FIXED: Wapas 'gemini-2.5-flash' laga diya gaya hai!
-    const taskTools = {
+    const taskTools: any = {
       functionDeclarations: [
         {
           name: "createTask",
@@ -40,8 +30,7 @@ export async function POST(req: Request) {
           parameters: {
             type: SchemaType.OBJECT, 
             properties: {
-              title: { type: SchemaType.STRING, description: "The exact task description." }, 
-              priority: { type: SchemaType.STRING, description: "Must be 'low', 'medium', or 'high'." }
+              title: { type: SchemaType.STRING, description: "Exact task title" }
             },
             required: ["title"],
           },
@@ -51,84 +40,74 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      tools: [taskTools as any],
+      tools: [taskTools],
     });
 
-    const prompt = `
-      You are 'TaskMind AI'. Today's date is: ${todayStr}.
-      User tasks: ${taskContext || "No tasks currently."}
-      User command: "${message}"
+    const prompt = `Context: ${taskContext}. Command: "${message}". Call 'createTask' tool immediately if adding a task.`;
 
-      CRITICAL RULES:
-      If the user wants to add/create a task, you MUST call the 'createTask' tool.
-      Do NOT say "I have added it" in text. Call the tool!
-    `;
-
-    // 5. Execute Gemini AI
     const result = await model.generateContent(prompt);
     const response = result.response;
-    const functionCalls = response.functionCalls ? response.functionCalls() : [];
-
+    
     let shouldRefresh = false;
     let aiResponse = "";
-    
-    // Check agar user task banane ko keh raha hai
-    const msgLower = message.toLowerCase();
-    const isAddingTask = msgLower.includes("add") || msgLower.includes("create") || msgLower.includes("bana");
 
-    // 6. Execution & Fallback Logic (The Brahmastra)
-    if (functionCalls && functionCalls.length > 0) {
-      // SCENARIO A: AI ne Tool chalaya
-      const call = functionCalls[0];
-      if (call.name === "createTask") {
-        const args = call.args as any;
-        
-        await Task.create({
-          userId,
-          title: args.title,
-          priority: args.priority || "medium",
-          status: "todo"
-        });
+    // SUPER SAFE Function Call extraction to avoid Vercel TS Build errors
+    const responseData = response as any;
+    let calls: any[] = [];
+    if (responseData.functionCalls && typeof responseData.functionCalls === "function") {
+        calls = responseData.functionCalls();
+    } else if (Array.isArray(responseData.functionCalls)) {
+        calls = responseData.functionCalls;
+    }
 
-        shouldRefresh = true;
-        aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya hai!`;
-      }
-    } else if (isAddingTask) {
-      // SCENARIO B: AI ne Tool nahi chalaya (Manual Override)
-      let extractedTitle = message
-        .replace(/add a new task to my list:?/i, "")
-        .replace(/add a new task:?/i, "")
-        .replace(/add task:?/i, "")
-        .replace(/create a task:?/i, "")
-        .replace(/.*bana do:?/i, "")
-        .trim();
-        
-      if (!extractedTitle || extractedTitle.length < 2) {
-        extractedTitle = message; 
-      }
+    const isAddingTask = message.toLowerCase().includes("add") || message.toLowerCase().includes("create");
 
+    if (calls && calls.length > 0) {
+      const args = calls[0].args;
+      
       await Task.create({
         userId,
-        title: extractedTitle,
+        title: args.title,
         priority: "medium",
-        status: "todo"
+        status: "todo",
+        dueDate: null
       });
 
       shouldRefresh = true;
-      aiResponse = `✅ Done bhai! Task "${extractedTitle}" add kar diya gaya hai.`;
+      aiResponse = `✅ Done bhai! Task "${args.title}" successfully add ho gaya!`;
+
+    } else if (isAddingTask) {
+      // Manual Override logic (failsafe)
+      let extTitle = message.replace(/add a new task to my list:?/i, "").replace(/add a new task:?/i, "").trim();
+      if (!extTitle) extTitle = "New Task";
+
+      await Task.create({
+        userId,
+        title: extTitle,
+        priority: "medium",
+        status: "todo",
+        dueDate: null
+      });
+
+      shouldRefresh = true;
+      aiResponse = `✅ Done bhai! Task "${extTitle}" add kar diya gaya hai.`;
+
     } else {
-      // SCENARIO C: Normal chat
       try {
         aiResponse = response.text();
       } catch (e) {
-        aiResponse = "Main tumhari task list manage karne mein help kar sakta hoon. Try 'Add a task...'";
+        aiResponse = "Main task manager hoon. Mujhe batao kaunsa task add karna hai.";
       }
     }
 
+    // Always returns 200 OK so frontend never throws 'Oops'
     return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
 
-  } catch (error) {
-    console.error("Chat API Error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+  } catch (error: any) {
+    // CRITICAL: Return as JSON with 200 status so it prints IN THE CHAT
+    return NextResponse.json({ 
+      reply: `⚠️ Database/API Error: ${error.message}`, 
+      refresh: false 
+    });
   }
 }
