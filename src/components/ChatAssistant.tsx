@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation"; // <-- NAYA: Router import kiya background refresh ke liye
 
 interface Message {
   role: "user" | "ai";
@@ -16,6 +17,7 @@ export default function ChatAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter(); // <-- NAYA: Initialize router
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,6 +47,12 @@ export default function ChatAssistant() {
       
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+
+      // <-- NAYA: Agar backend se refresh true aata hai, toh bina full reload ke components refresh karo
+      if (data.refresh) {
+        router.refresh();
+      }
+
     } catch (error) {
       console.error("Chat Error:", error);
       setMessages((prev) => [...prev, { role: "ai", content: "Oops! Something went wrong. Please try again." }]);
