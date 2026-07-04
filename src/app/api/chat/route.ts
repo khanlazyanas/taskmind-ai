@@ -31,17 +31,24 @@ export async function POST(req: Request) {
 
     const todayStr = new Date().toLocaleDateString();
 
+    // Is message mein task creation command hai ya nahi, check karne ke liye flag
+    const isTaskCreation = 
+      message.toLowerCase().includes("add") || 
+      message.toLowerCase().includes("create") || 
+      message.toLowerCase().includes("bana") || 
+      message.toLowerCase().includes("schedule");
+
     // 4. Gemini Function Calling / Tools Definition
     const taskTools = {
       functionDeclarations: [
         {
           name: "createTask",
-          description: "Create a new task in the database. MUST be called when user asks to add, save, or create a task.",
+          description: "Create a new task in the database.",
           parameters: {
             type: SchemaType.OBJECT, 
             properties: {
-              title: { type: SchemaType.STRING, description: "The title of the task." }, 
-              priority: { type: SchemaType.STRING, description: "Must be 'low', 'medium', or 'high'." }, 
+              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, 
+              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, 
               dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD)." }, 
             },
             required: ["title"],
@@ -50,25 +57,35 @@ export async function POST(req: Request) {
       ],
     };
 
-    // Gemini Model instance
-    const model = genAI.getGenerativeModel({ 
+    // NAYA & POWERFUL UPGRADE: Agar user task bana raha hai, toh force karo tool use karne ke liye!
+    const modelConfig: any = {
       model: "gemini-2.5-flash",
       tools: [taskTools as any],
-    });
+    };
 
-    // SUPER STRICT PROMPT
+    if (isTaskCreation) {
+      modelConfig.toolConfig = {
+        functionCallingConfig: {
+          mode: "ANY", // <-- AI KO FORCED FUNCTION CALLING PAR DAAL DIYA (Ab wo text jhooth nahi bol payega)
+          allowedFunctionNames: ["createTask"]
+        }
+      };
+    }
+
+    const model = genAI.getGenerativeModel(modelConfig);
+
     const prompt = `
-      System Role: You are 'TaskMind AI', a strict backend execution agent.
-      Today's date: ${todayStr}
-      Current tasks: ${taskContext || "None."}
-      User's command: "${message}"
+      You are 'TaskMind AI', a smart project manager agent.
+      Today's date is: ${todayStr}
+      Current user task list:
+      ${taskContext || "No tasks currently."}
 
-      CRITICAL RULES (FAILING THESE WILL CRASH THE SYSTEM):
-      1. MANDATORY TOOL USAGE: If the user asks to add, create, schedule, or put a task on the list, YOU MUST CALL THE 'createTask' TOOL.
-      2. NO HALLUCINATIONS: NEVER reply with plain text saying "I have added it to your list". If you do not call the tool, the task is NOT added. Call the tool!
-      3. DEFAULTS: If priority is missing, use "medium". If date is missing, leave it empty. Do not ask for them.
-      4. GENERAL CHAT: ONLY reply with normal text if the user is asking a general question (like "what are my tasks?") and NOT asking to create a task.
-      5. LANGUAGE: If you reply with text, match the user's language (Hinglish/English).
+      User command: "${message}"
+
+      INSTRUCTIONS:
+      Extract the title, priority, and due date from the user command to fill the 'createTask' tool parameters.
+      - If priority is missing, set "medium".
+      - If date is missing, leave it blank.
     `;
 
     // 5. Execute Gemini AI
@@ -78,12 +95,6 @@ export async function POST(req: Request) {
 
     let shouldRefresh = false;
     let aiResponse = "";
-
-    try {
-      aiResponse = response.text();
-    } catch (e) {
-      // Ignored if text doesn't exist
-    }
 
     // 6. Tool Call Handling
     if (functionCalls && functionCalls.length > 0) {
@@ -100,7 +111,7 @@ export async function POST(req: Request) {
             }
         }
 
-        // Database mein Task save karo
+        // Real MongoDB Entry
         await Task.create({
           userId,
           title: args.title,
@@ -110,14 +121,23 @@ export async function POST(req: Request) {
         });
 
         shouldRefresh = true;
-        aiResponse = `Done! Task "${args.title}" has been successfully added to your workspace. 🚀`;
+        
+        // Response language check
+        const isHindi = message.match(/[\u0600-\u06FF\u0900-\u097F]/) || message.toLowerCase().includes("bana") || message.toLowerCase().includes("bhai");
+        aiResponse = isHindi 
+          ? `Done bhai! Task "${args.title}" successfully add ho gaya hai workspace me. 🚀`
+          : `Done! Task "${args.title}" has been successfully added to your workspace. 🚀`;
       }
-    } else if (message.toLowerCase().includes("add") || message.toLowerCase().includes("create") || message.toLowerCase().includes("bana")) {
-      // FALLBACK SAFEGUARD: Agar AI fir se hawabaazi kare, toh usko pakdo
-      aiResponse = "System Error: Task save nahi ho paya. Please ek baar dobara try karo (eg: 'Add task: ...')";
+    } else {
+      // Normal chat handle agar creation command nahi hai
+      try {
+        aiResponse = response.text();
+      } catch (e) {
+        aiResponse = "I can help you manage your tasks. Try saying 'Add a new task: ...'";
+      }
     }
 
-    return NextResponse.json({ reply: aiResponse || "Understood!", refresh: shouldRefresh });
+    return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
 
   } catch (error) {
     console.error("Chat API Error:", error);
