@@ -4,6 +4,10 @@ import Task from "@/models/Task";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 
+// <-- NAYA IMPORTS: Push Notification ke liye
+import PushSubscription from "@/models/PushSubscription";
+import webpush from "web-push";
+
 export const dynamic = 'force-dynamic';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -31,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    // NAYA: dueDate ko body se extract kiya
+    // dueDate ko body se extract kiya
     const { title, description, dueDate } = body;
     
     await connectToDatabase();
@@ -72,10 +76,50 @@ export async function POST(request: Request) {
       priority: aiData.priority || "MEDIUM",
       tags: aiData.tags || [],
       subtasks: generatedSubtasks, 
-      // NAYA: Agar dueDate aayi hai toh usko Date object banakar save karo
+      // Agar dueDate aayi hai toh usko Date object banakar save karo
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
     
+    // ==========================================
+    // 🚀 NAYA LOGIC: PUSH NOTIFICATION TRIGGER
+    // ==========================================
+    try {
+      // 1. User ke saare devices (subscriptions) database se nikaalo
+      const userSubscriptions = await PushSubscription.find({ userId });
+      
+      if (userSubscriptions.length > 0) {
+        // VAPID keys setup karo
+        webpush.setVapidDetails(
+          "mailto:anas@taskmind.com",
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+          process.env.VAPID_PRIVATE_KEY!
+        );
+
+        // 2. Notification ka message banao (AI priority use karke)
+        const payload = JSON.stringify({
+          title: aiData.priority === 'HIGH' ? "🚨 High Priority Task!" : "📌 Naya Task Add Hua",
+          body: `"${title}" successfully add ho gaya hai.`
+        });
+
+        // 3. Sabhi active devices par push notification bhejo
+        const pushPromises = userSubscriptions.map((sub: any) => 
+          webpush.sendNotification(sub.subscription, payload).catch((err) => {
+            // Agar browser se notification block ho gaya ya expire ho gaya, toh DB se clean kar do
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              return PushSubscription.deleteOne({ _id: sub._id });
+            }
+          })
+        );
+        
+        // Promise.all use karke background mein run hone do, API ko block mat karo
+        Promise.all(pushPromises).catch(console.error); 
+      }
+    } catch (pushError) {
+      console.error("Push notification logic error:", pushError);
+      // Galti se push fail hua, toh bhi user ka task theek se ban jaye
+    }
+    // ==========================================
+
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     console.error("Error creating AI task:", error);
