@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai"; // <-- UPDATE: SchemaType add kiya hai
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Task from "@/models/Task";
@@ -14,23 +14,22 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // 2. User ka message receive karo
+    // 2. Receive user message
     const body = await req.json();
     const { message } = body;
     if (!message) {
       return new NextResponse("Message is required", { status: 400 });
     }
 
-    // 3. User ke saare tasks fetch karo (Context ke liye)
+    // 3. Fetch all user tasks for AI context
     await connectToDatabase();
     const tasks = await Task.find({ userId }).lean();
 
-    // Tasks ko ek simple readable format mein convert karo taaki AI samajh sake
+    // Convert tasks into a readable string for the AI
     const taskContext = tasks.map(t => 
       `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority}, Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'None'})`
     ).join("\n");
 
-    // Aaj ki date provide karein taaki relative phrases (like "tomorrow", "next monday") AI samajh sake
     const todayStr = new Date().toLocaleDateString();
 
     // 4. Gemini Function Calling / Tools Definition
@@ -38,47 +37,71 @@ export async function POST(req: Request) {
       functionDeclarations: [
         {
           name: "createTask",
-          description: "Create a new task in the database when the user explicitly asks to add, save, or create a task.",
+          description: "Create a new task in the database.",
           parameters: {
-            type: SchemaType.OBJECT, // <-- UPDATE: String ki jagah SchemaType.OBJECT
+            type: SchemaType.OBJECT,
             properties: {
-              title: { type: SchemaType.STRING, description: "The clear title or description of the task." }, // <-- UPDATE
-              priority: { type: SchemaType.STRING, description: "Priority level: must be 'low', 'medium', or 'high'." }, // <-- UPDATE
-              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD) for when the task is due based on current date context." }, // <-- UPDATE
+              title: { type: SchemaType.STRING, description: "The clear title of the task." },
+              priority: { type: SchemaType.STRING, description: "Priority level: 'LOW', 'MEDIUM', or 'HIGH'." },
+              dueDate: { type: SchemaType.STRING, description: "ISO date string (YYYY-MM-DD)." },
             },
             required: ["title"],
+          },
+        },
+        {
+          name: "updateTask",
+          description: "Update an existing task's status, priority, or due date. Use this to reschedule or complete tasks.",
+          parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+              taskId: { type: SchemaType.STRING, description: "The exact ID of the task to update." },
+              status: { type: SchemaType.STRING, description: "New status: 'todo', 'in-progress', or 'completed'." },
+              priority: { type: SchemaType.STRING, description: "New priority: 'LOW', 'MEDIUM', or 'HIGH'." },
+              dueDate: { type: SchemaType.STRING, description: "New ISO date string (YYYY-MM-DD)." },
+            },
+            required: ["taskId"],
+          },
+        },
+        {
+          name: "deleteTask",
+          description: "Delete a task from the database.",
+          parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+              taskId: { type: SchemaType.STRING, description: "The exact ID of the task to delete." },
+            },
+            required: ["taskId"],
           },
         }
       ],
     };
 
-    // Gemini Model instance with Tools setup
+    // Initialize Gemini Model with Tools
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      tools: [taskTools as any] // <-- UPDATE: Type safety ke liye 'as any' add kiya taaki aage koi error na aaye
+      tools: [taskTools as any]
     });
 
     const prompt = `
       You are 'TaskMind AI', a smart, helpful, and highly efficient personal project manager assistant.
-      The user is asking you a question or giving you a direct command to manage their tasks.
+      The user's name is Anas. You can greet him naturally if appropriate.
       
       Today's date is: ${todayStr}
 
-      Here is the user's current task list:
+      Here is Anas's current task list:
       ${taskContext || "The user currently has no tasks."}
 
       User's Question/Command: "${message}"
 
       STRICT INSTRUCTIONS FOR YOUR RESPONSE:
-      1. LANGUAGE: Always reply in the exact same language the user is speaking. If the user writes in Hindi/Hinglish, you MUST reply in natural, friendly Hinglish.
-      2. TASK CREATION: If the user asks to add, create, or schedule a task, YOU MUST INVOKE the 'createTask' tool IMMEDIATELY. 
-      3. NO QUESTIONS: DO NOT ask the user for missing details like priority or due date. 
-         - If priority is not explicitly mentioned, silently default to "medium".
-         - If a date/time is mentioned (like "kal", "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool. 
-         - If no date is mentioned, leave it empty.
-      4. Just execute the tool! Do not chat unnecessarily before executing the tool.
+      1. LANGUAGE: You MUST reply entirely in professional English. Do not use Hindi or Hinglish.
+      2. EXECUTE ACTIONS: If the user asks to add, create, update, complete, reschedule, or delete a task, YOU MUST INVOKE the relevant tool IMMEDIATELY.
+      3. NO QUESTIONS: DO NOT ask the user for missing details like priority or exact dates. 
+         - If priority is not explicitly mentioned, silently default to "MEDIUM".
+         - If a date/time is mentioned (like "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool.
+      4. Do not chat unnecessarily before executing the tool. Just execute it.
     `;
-    // Initial check query execution
+
     const result = await model.generateContent(prompt);
     const response = result.response;
     const functionCalls = response.functionCalls();
@@ -89,49 +112,61 @@ export async function POST(req: Request) {
     try {
       aiResponse = response.text();
     } catch (e) {
-      // Pure function call alerts won't return text in initial step, which is fine.
+      // Pure function call alerts might not return text initially.
     }
 
-    // 5. Tool Call Handling
+    // 5. Tool Call Handling Execution
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
+      const args = call.args as any;
+      let actionResult = "";
       
       if (call.name === "createTask") {
-        const args = call.args as any;
-        
-        // Database mein Task entry execute karo
         await Task.create({
           userId,
           title: args.title,
-          priority: args.priority || "medium",
+          priority: args.priority || "MEDIUM",
           status: "todo",
           dueDate: args.dueDate ? new Date(args.dueDate) : null
         });
-
-        // Trigger dynamic layout sync for dashboard
         shouldRefresh = true;
-
-        // Multi-turn turn setup: Tool ki response wapas Gemini ko bhejo taaki wo badhiya confirmation response generate kare
-        const history = [
-          { role: "user", parts: [{ text: prompt }] },
-          { role: "model", parts: [{ functionCall: call }] },
-          { 
-            role: "user", 
-            parts: [{ 
-              functionResponse: { 
-                name: "createTask", 
-                response: { success: true, message: `Successfully created task: ${args.title}` } 
-              } 
-            }] 
-          }
-        ];
-
-        const finalResult = await model.generateContent({ contents: history });
-        aiResponse = finalResult.response.text();
+        actionResult = `Successfully created task: ${args.title}`;
+      } 
+      else if (call.name === "updateTask") {
+        const updateData: any = {};
+        if (args.status) updateData.status = args.status;
+        if (args.priority) updateData.priority = args.priority;
+        if (args.dueDate) updateData.dueDate = new Date(args.dueDate);
+        
+        await Task.findByIdAndUpdate(args.taskId, updateData);
+        shouldRefresh = true;
+        actionResult = `Successfully updated the task.`;
       }
+      else if (call.name === "deleteTask") {
+        await Task.findByIdAndDelete(args.taskId);
+        shouldRefresh = true;
+        actionResult = `Successfully deleted the task.`;
+      }
+
+      // Multi-turn setup: Send the tool's response back to Gemini for a natural confirmation message
+      const history = [
+        { role: "user", parts: [{ text: prompt }] },
+        { role: "model", parts: [{ functionCall: call }] },
+        { 
+          role: "user", 
+          parts: [{ 
+            functionResponse: { 
+              name: call.name, 
+              response: { success: true, message: actionResult } 
+            } 
+          }] 
+        }
+      ];
+
+      const finalResult = await model.generateContent({ contents: history });
+      aiResponse = finalResult.response.text();
     }
 
-    // Response ke sath refresh flag bhej rahe hain taaki screen load ho sake
     return NextResponse.json({ reply: aiResponse, refresh: shouldRefresh });
 
   } catch (error) {

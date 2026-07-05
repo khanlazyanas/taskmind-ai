@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-// <-- NAYA: Mic aur MicOff icons import kiye hain
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, Mic, MicOff } from "lucide-react"; 
 import { useRouter } from "next/navigation"; 
 
@@ -17,8 +16,6 @@ export default function ChatAssistant() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
-  // <-- NAYA: Mic listening state
   const [isListening, setIsListening] = useState(false); 
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,25 +29,25 @@ export default function ChatAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  // <-- NAYA: Voice recognition function add kiya
+  // Voice recognition functionality
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      alert("Bhai, tumhara browser voice command support nahi karta. Google Chrome use karo!");
+      alert("Your browser does not support voice commands. Please use Google Chrome.");
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-IN'; // Indian accent support
+    recognition.lang = 'en-US'; // Set to English
 
     recognition.onstart = () => setIsListening(true);
     
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      // Jo bola, usko input field mein type kar dega
+      // Append the recognized speech to the input field
       setInput((prev) => prev ? `${prev} ${transcript}` : transcript);
     };
 
@@ -85,6 +82,7 @@ export default function ChatAssistant() {
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
 
+      // Refresh the dashboard if a database action occurred
       if (data.refresh) {
         router.refresh();
       }
@@ -172,7 +170,6 @@ export default function ChatAssistant() {
                 className="flex-1 bg-transparent px-4 py-2 text-sm font-medium focus:outline-none dark:text-white placeholder:text-zinc-400"
               />
               
-              {/* <-- NAYA: Mic Button --> */}
               <button
                 type="button"
                 onClick={startListening}
