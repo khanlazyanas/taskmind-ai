@@ -6,8 +6,17 @@ export default function PushNotificationManager() {
 
   const enableNotifications = async () => {
     try {
+      // Check agar browser push support karta hai ya nahi
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert("Bhai, tumhara browser push notifications support nahi karta.");
+        return;
+      }
+
       // 1. Service worker register karo
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.register('/sw.js');
+      
+      // 🚀 CRASH FIX: Wait karo jab tak Service Worker completely ACTIVE (ready) na ho jaye
+      const registration = await navigator.serviceWorker.ready;
       
       // 2. Push manager se subscribe karo
       const subscription = await registration.pushManager.subscribe({
@@ -15,7 +24,7 @@ export default function PushNotificationManager() {
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       });
 
-      // 3. Backend API ko data bhejo (Jo turant ek test notification return karegi)
+      // 3. Backend API ko data bhejo
       await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -25,7 +34,7 @@ export default function PushNotificationManager() {
       setIsSubscribed(true);
     } catch (error) {
       console.error("Notification Error:", error);
-      alert("Push notification block ho gaya ya browser support nahi karta.");
+      alert("Push notification error. Check console for details.");
     }
   };
 
