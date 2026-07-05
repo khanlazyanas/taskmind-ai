@@ -18,17 +18,17 @@ export async function POST(req: Request) {
     const subscription = await req.json();
     await connectToDatabase();
 
-    // User ka subscription save karo (agar naya device hai toh add karo)
+    // Save user subscription (add if it's a new device)
     await PushSubscription.findOneAndUpdate(
       { userId, "subscription.endpoint": subscription.endpoint }, 
       { userId, subscription },
       { upsert: true, new: true }
     );
 
-    // Ek chhota sa confirmation alert
+    // A small confirmation alert
     const payload = JSON.stringify({
       title: "Alerts Active! 🔔",
-      body: "TaskMind ke real-time notifications successfully enable ho gaye hain."
+      body: "TaskMind real-time notifications have been successfully enabled."
     });
 
     await webpush.sendNotification(subscription, payload);
