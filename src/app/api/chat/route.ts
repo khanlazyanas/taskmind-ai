@@ -99,7 +99,8 @@ export async function POST(req: Request) {
       3. NO QUESTIONS: DO NOT ask the user for missing details like priority or exact dates. 
          - If priority is not explicitly mentioned, silently default to "MEDIUM".
          - If a date/time is mentioned (like "tomorrow", "next week"), calculate the ISO date based on Today's date and send it to the tool.
-      4. Do not chat unnecessarily before executing the tool. Just execute it.
+      4. DO NOT chat unnecessarily before executing a tool. Just execute it.
+      5. FORMATTING: NEVER display raw database IDs (like 6a4a9c...) to the user. If summarizing tasks, present them in a clean, human-readable bulleted list (e.g., "• Task Title (Medium Priority, Due: Date)"). Use the IDs silently in the background for tool calls.
     `;
 
     const result = await model.generateContent(prompt);
