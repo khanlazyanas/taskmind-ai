@@ -9,7 +9,9 @@ import CreateTaskModal from "@/components/CreateTaskModal";
 import EditTaskModal from "@/components/EditTaskModal";
 import ChatAssistant from "@/components/ChatAssistant"; 
 import TaskAnalytics from "@/components/TaskAnalytics"; 
-import TaskCalendar from "@/components/TaskCalendar"; // NAYA: Calendar Import
+import TaskCalendar from "@/components/TaskCalendar"; 
+// <-- NAYA: Push Notification Manager Import Kiya
+import PushNotificationManager from "@/components/PushNotificationManager"; 
 import { UserButton } from "@clerk/nextjs";
 
 interface Task {
@@ -29,7 +31,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [currentView, setCurrentView] = useState<"KANBAN" | "CALENDAR">("KANBAN"); // NAYA: View State
+  const [currentView, setCurrentView] = useState<"KANBAN" | "CALENDAR">("KANBAN"); 
 
   const fetchTasks = async () => {
     try {
@@ -226,6 +228,9 @@ export default function Home() {
           </div>
         </div>
 
+        {/* <-- NAYA: Push Notification Banner yahan add kiya hai --> */}
+        <PushNotificationManager />
+
         {!isLoading && tasks.length > 0 && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -284,10 +289,9 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar pr-2">
-              {/* NAYA: Views Toggler (Kanban vs Calendar) */}
               <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl mr-2">
                 <button 
-                  onClick={() => setPriorityFilter("ALL")} // Reset to All if clicked
+                  onClick={() => setPriorityFilter("ALL")} 
                   className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-zinc-900 shadow-sm text-zinc-800 dark:text-white"
                 >
                   Board
@@ -628,7 +632,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* NAYA: Dashboard view change condition */}
         {!isLoading && tasks.length > 0 && (
           <div className="pt-6">
             <div className="flex justify-end mb-4 px-2">
