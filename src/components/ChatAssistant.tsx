@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation"; // <-- NAYA: Router import kiya background refresh ke liye
+// <-- NAYA: Mic aur MicOff icons import kiye hain
+import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, Mic, MicOff } from "lucide-react"; 
+import { useRouter } from "next/navigation"; 
 
 interface Message {
   role: "user" | "ai";
@@ -16,8 +17,12 @@ export default function ChatAssistant() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // <-- NAYA: Mic listening state
+  const [isListening, setIsListening] = useState(false); 
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const router = useRouter(); // <-- NAYA: Initialize router
+  const router = useRouter(); 
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,6 +31,38 @@ export default function ChatAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // <-- NAYA: Voice recognition function add kiya
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert("Bhai, tumhara browser voice command support nahi karta. Google Chrome use karo!");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-IN'; // Indian accent support
+
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      // Jo bola, usko input field mein type kar dega
+      setInput((prev) => prev ? `${prev} ${transcript}` : transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Mic error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+  };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +85,6 @@ export default function ChatAssistant() {
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
 
-      // <-- NAYA: Agar backend se refresh true aata hai, toh bina full reload ke components refresh karo
       if (data.refresh) {
         router.refresh();
       }
@@ -135,6 +171,21 @@ export default function ChatAssistant() {
                 placeholder="Ask AI anything..."
                 className="flex-1 bg-transparent px-4 py-2 text-sm font-medium focus:outline-none dark:text-white placeholder:text-zinc-400"
               />
+              
+              {/* <-- NAYA: Mic Button --> */}
+              <button
+                type="button"
+                onClick={startListening}
+                className={`w-9 h-9 flex justify-center items-center rounded-full transition-colors ${
+                  isListening
+                    ? "bg-red-500/10 text-red-500 animate-pulse"
+                    : "text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+                title="Speak to type"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
