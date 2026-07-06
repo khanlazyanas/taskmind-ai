@@ -8,31 +8,26 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
   try {
-    // 1. User Auth Check
     const { userId } = await auth();
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // 2. Receive user message
     const body = await req.json();
     const { message } = body;
     if (!message) {
       return new NextResponse("Message is required", { status: 400 });
     }
 
-    // 3. Fetch all user tasks for AI context
     await connectToDatabase();
     const tasks = await Task.find({ userId }).lean();
 
-    // Convert tasks into a readable string for the AI
     const taskContext = tasks.map(t => 
       `- ID: ${t._id} | [${t.status}] ${t.title} (Priority: ${t.priority}, Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'None'})`
     ).join("\n");
 
     const todayStr = new Date().toLocaleDateString();
 
-    // 4. Gemini Function Calling / Tools Definition
     const taskTools = {
       functionDeclarations: [
         {
@@ -55,7 +50,7 @@ export async function POST(req: Request) {
             type: SchemaType.OBJECT,
             properties: {
               taskId: { type: SchemaType.STRING, description: "The exact ID of the task to update." },
-              status: { type: SchemaType.STRING, description: "New status: 'todo', 'in-progress', or 'completed'." },
+              status: { type: SchemaType.STRING, description: "New status: 'TODO', 'IN_PROGRESS', or 'DONE'." },
               priority: { type: SchemaType.STRING, description: "New priority: 'LOW', 'MEDIUM', or 'HIGH'." },
               dueDate: { type: SchemaType.STRING, description: "New ISO date string (YYYY-MM-DD)." },
             },
@@ -76,7 +71,6 @@ export async function POST(req: Request) {
       ],
     };
 
-    // Initialize Gemini Model with Tools
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       tools: [taskTools as any]
@@ -112,11 +106,8 @@ export async function POST(req: Request) {
 
     try {
       aiResponse = response.text();
-    } catch (e) {
-      // Pure function call alerts might not return text initially.
-    }
+    } catch (e) {}
 
-    // 5. Tool Call Handling Execution
     if (functionCalls && functionCalls.length > 0) {
       const call = functionCalls[0];
       const args = call.args as any;
@@ -127,7 +118,7 @@ export async function POST(req: Request) {
           userId,
           title: args.title,
           priority: args.priority || "MEDIUM",
-          status: "TODO",
+          status: "TODO", // <-- FIXED BUG: Uppercase
           dueDate: args.dueDate ? new Date(args.dueDate) : null
         });
         shouldRefresh = true;
@@ -149,7 +140,6 @@ export async function POST(req: Request) {
         actionResult = `Successfully deleted the task.`;
       }
 
-      // Multi-turn setup: Send the tool's response back to Gemini for a natural confirmation message
       const history = [
         { role: "user", parts: [{ text: prompt }] },
         { role: "model", parts: [{ functionCall: call }] },
