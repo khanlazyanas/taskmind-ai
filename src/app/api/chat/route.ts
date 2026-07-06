@@ -127,7 +127,7 @@ export async function POST(req: Request) {
           userId,
           title: args.title,
           priority: args.priority || "MEDIUM",
-          status: "todo",
+          status: "TODO",
           dueDate: args.dueDate ? new Date(args.dueDate) : null
         });
         shouldRefresh = true;
