@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Bot, Sparkles, LayoutGrid, Calendar as CalendarIcon, Download, CheckCircle2, Zap, BarChart3, Database, Lock, Code } from "lucide-react";
+import { ArrowRight, Bot, Sparkles, LayoutGrid, Calendar as CalendarIcon, Download, CheckCircle2, Zap, BarChart3, Database, Lock, Code, BellRing, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 
@@ -9,39 +9,46 @@ export default function LandingPage() {
   const { userId } = useAuth();
 
   return (
-    <main className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-50 selection:bg-blue-500/30 overflow-x-hidden relative font-sans">
+    <main className="min-h-screen bg-[#050505] text-zinc-50 selection:bg-teal-500/30 overflow-x-hidden relative font-sans">
       
-      {/* Ultra-Premium Background Effects */}
-      <div className="absolute inset-0 z-0 pointer-events-none flex justify-center">
-        <div className="absolute top-[-20%] w-[80%] h-[50%] bg-gradient-to-b from-blue-500/10 via-purple-500/5 to-transparent dark:from-blue-500/20 dark:via-purple-500/10 blur-[120px] rounded-full mix-blend-normal" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      {/* ================= ULTRA-PREMIUM BACKGROUND EFFECTS ================= */}
+      <div className="absolute inset-0 z-0 pointer-events-none flex justify-center overflow-hidden">
+        {/* Core Glow */}
+        <div className="absolute top-[-20%] w-[100%] max-w-[1200px] h-[60%] bg-gradient-to-b from-teal-500/10 via-blue-600/5 to-transparent blur-[120px] rounded-full mix-blend-screen" />
+        <div className="absolute top-[20%] left-[-10%] w-[40%] h-[40%] bg-purple-600/5 blur-[150px] rounded-full mix-blend-screen" />
+        
+        {/* Subtle Grid Texture */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
       </div>
 
-      {/* Floating Glassmorphism Navbar */}
+      {/* ================= FLOATING GLASSMORPHISM NAVBAR ================= */}
       <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-6">
         <motion.div 
           initial={{ y: -20, opacity: 0 }} 
           animate={{ y: 0, opacity: 1 }} 
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex items-center justify-between w-full max-w-[1200px] bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl px-6 py-4 rounded-full border border-zinc-200/50 dark:border-zinc-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)]"
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center justify-between w-full max-w-[1200px] bg-[#0a0a0a]/60 backdrop-blur-2xl px-5 py-3 rounded-full border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
         >
-          <div className="flex items-center gap-3">
-            <div className="bg-zinc-950 dark:bg-white p-2 rounded-xl shadow-md">
-              <Bot className="w-5 h-5 text-white dark:text-zinc-950" />
+          <div className="flex items-center gap-3 pl-2">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 bg-teal-500/20 blur-md rounded-full" />
+              <div className="bg-white/10 border border-white/20 p-2 rounded-xl backdrop-blur-md relative z-10">
+                <Bot className="w-5 h-5 text-teal-400" />
+              </div>
             </div>
-            <span className="font-extrabold text-xl tracking-tight text-zinc-900 dark:text-white">TaskMind</span>
+            <span className="font-extrabold text-xl tracking-tight text-white">TaskMind<span className="text-teal-500">.</span></span>
           </div>
           
           <div className="flex items-center gap-3">
             {!userId ? (
               <SignInButton mode="modal">
-                <button className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-sm font-bold hover:scale-105 transition-transform shadow-lg">
+                <button className="px-6 py-2.5 rounded-full bg-white text-black text-sm font-bold hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.1)]">
                   Sign In
                 </button>
               </SignInButton>
             ) : (
-              <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 hover:scale-105 transition-all shadow-lg shadow-blue-500/25 flex items-center gap-2">
-                Workspace <ArrowRight className="w-4 h-4" />
+              <Link href="/dashboard" className="group px-6 py-2.5 rounded-full bg-gradient-to-r from-teal-500 to-blue-600 text-white text-sm font-bold hover:shadow-[0_0_30px_rgba(20,184,166,0.3)] transition-all flex items-center gap-2 border border-white/10">
+                Workspace <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             )}
           </div>
@@ -50,114 +57,122 @@ export default function LandingPage() {
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-6">
         
-        {/* Hero Section */}
-        <section className="pt-40 md:pt-52 pb-20 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut" }}>
+        {/* ================= HERO SECTION ================= */}
+        <section className="pt-48 md:pt-60 pb-32 text-center flex flex-col items-center">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="flex flex-col items-center w-full">
             
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 text-zinc-600 dark:text-zinc-300 text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-sm">
-              <Sparkles className="w-4 h-4 text-amber-500" /> Powered by Gemini 2.5 Flash
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-[11px] font-bold uppercase tracking-[0.2em] mb-10 backdrop-blur-md shadow-[0_0_30px_rgba(255,255,255,0.03)]">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+              </span>
+              Powered by Gemini 2.5 Flash
             </div>
             
-            <h1 className="text-6xl md:text-[5.5rem] font-black tracking-tighter mb-8 leading-[1.1]">
-              <span className="text-zinc-900 dark:text-white">Your ultimate</span> <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+            <h1 className="text-5xl sm:text-6xl md:text-[6.5rem] font-extrabold tracking-tighter mb-8 leading-[1.05] max-w-5xl mx-auto">
+              <span className="text-white">Your ultimate</span> <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 bg-[length:200%_auto] animate-[gradient_4s_linear_infinite]">
                 AI Project Manager.
               </span>
             </h1>
             
-            <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-              TaskMind isn't just a to-do list. It's an intelligent workspace that auto-tags, categorizes, and breaks down your work using advanced AI, giving you total control.
+            <p className="text-lg md:text-xl text-zinc-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+              TaskMind isn't just a to-do list. It's an intelligent workspace that executes database commands, triggers background cron jobs, and manages your workflow via natural language.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               {!userId ? (
                 <SignInButton mode="modal">
-                  <button className="w-full sm:w-auto px-8 py-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-lg hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
-                    Start Building for Free <ArrowRight className="w-5 h-5" />
+                  <button className="group relative w-full sm:w-auto px-8 py-4 rounded-full bg-white text-black font-bold text-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    Start Building for Free <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </SignInButton>
               ) : (
-                <Link href="/dashboard" className="w-full sm:w-auto px-8 py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg hover:scale-105 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2">
-                  Launch TaskMind <ArrowRight className="w-5 h-5" />
+                <Link href="/dashboard" className="group relative w-full sm:w-auto px-8 py-4 rounded-full bg-white text-black font-bold text-lg transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2">
+                  Launch TaskMind <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               )}
-              <a href="https://github.com/khanlazyanas/taskmind-ai" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white font-bold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2">
-                <Code className="w-5 h-5" /> View Source
+              <a href="https://github.com/khanlazyanas/taskmind-ai" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#0a0a0a] text-white font-bold text-lg hover:bg-white/5 transition-colors border border-white/10 flex items-center justify-center gap-2 shadow-xl">
+                <Code className="w-5 h-5 text-zinc-400" /> View Source
               </a>
             </div>
 
           </motion.div>
         </section>
 
-        {/* The "Everything Inside TaskMind" Bento Grid */}
-        <section className="pb-32">
+        {/* ================= THE BENTO GRID ================= */}
+        <section className="pb-40">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4">Everything you need, supercharged by AI.</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-4">Engineered for the future of work.</h2>
+            <p className="text-zinc-500 font-medium">A robust MERN architecture supercharged by serverless infrastructure.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[300px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[320px]">
             
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="md:col-span-2 bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-900 dark:to-zinc-950 rounded-[2.5rem] p-10 border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 dark:bg-blue-500/20 blur-[80px] rounded-full group-hover:scale-110 transition-transform duration-700" />
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200 dark:border-blue-800/50">
-                  <Bot className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-3">TaskMind AI Assistant</h3>
-                  <p className="text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed max-w-md">
-                    Stop typing, start asking. Chat with your live workspace to find high-priority tasks, get status updates, and auto-generate detailed subtask action plans in seconds.
-                  </p>
-                </div>
+            {/* AI Assistant Card - Span 2 */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="md:col-span-2 bg-[#0a0a0a] rounded-[2.5rem] p-10 border border-white/5 hover:border-white/20 transition-colors shadow-2xl relative overflow-hidden group flex flex-col justify-between cursor-default">
+              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-teal-500/10 blur-[100px] rounded-full group-hover:bg-teal-500/20 transition-colors duration-700 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+              
+              <div className="w-14 h-14 bg-teal-500/10 rounded-2xl flex items-center justify-center border border-teal-500/20 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500">
+                <Bot className="w-7 h-7 text-teal-400" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-3xl font-extrabold text-white mb-3">Context-Aware AI Chat</h3>
+                <p className="text-zinc-400 text-lg leading-relaxed max-w-lg">
+                  Stop clicking. Chat directly with your database. The Gemini API utilizes custom function calling to create, update, and manage your tasks in real-time.
+                </p>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-zinc-950 dark:bg-white rounded-[2.5rem] p-10 border border-zinc-800 dark:border-zinc-200 shadow-xl relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="w-14 h-14 bg-zinc-800 dark:bg-zinc-100 rounded-2xl flex items-center justify-center">
-                  <LayoutGrid className="w-7 h-7 text-white dark:text-zinc-950" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-extrabold text-white dark:text-zinc-900 mb-2">Kanban Flow</h3>
-                  <p className="text-zinc-400 dark:text-zinc-600 font-medium">Drag, drop, and conquer. A buttery-smooth board to visualize your entire workflow.</p>
-                </div>
+            {/* Kanban Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-zinc-900 to-[#0a0a0a] rounded-[2.5rem] p-10 border border-white/10 hover:border-white/20 transition-colors shadow-2xl relative overflow-hidden group flex flex-col justify-between cursor-default">
+              <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 mb-6 group-hover:rotate-12 transition-transform duration-500">
+                <LayoutGrid className="w-7 h-7 text-zinc-300" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-extrabold text-white mb-2">Kanban Flow</h3>
+                <p className="text-zinc-400 font-medium leading-relaxed">Powered by dnd-kit for a buttery-smooth, interactive drag-and-drop experience.</p>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[2.5rem] p-10 shadow-xl relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-                  <BarChart3 className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-extrabold text-white mb-2">Live Analytics</h3>
-                  <p className="text-blue-100 font-medium">Real-time dynamic Recharts displaying your completion rate and priority breakdown.</p>
-                </div>
+            {/* Push Notifications Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-blue-900/40 to-[#0a0a0a] rounded-[2.5rem] p-10 border border-blue-500/20 hover:border-blue-500/40 transition-colors shadow-2xl relative overflow-hidden group flex flex-col justify-between cursor-default">
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.05)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-bg-pan" />
+              <div className="w-14 h-14 bg-blue-500/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-blue-500/30 mb-6 relative z-10 group-hover:-translate-y-1 transition-transform duration-500">
+                <BellRing className="w-7 h-7 text-blue-400" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-extrabold text-white mb-2">Native Push Alerts</h3>
+                <p className="text-blue-200/70 font-medium leading-relaxed">Integrated Web Push API with VAPID keys to deliver OS-level notifications.</p>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="bg-zinc-100 dark:bg-zinc-900 rounded-[2.5rem] p-10 border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center border border-amber-200 dark:border-amber-800/50">
-                  <CalendarIcon className="w-7 h-7 text-amber-600 dark:text-amber-500" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mb-2">Smart Calendar</h3>
-                  <p className="text-zinc-600 dark:text-zinc-400 font-medium">Seamlessly toggle to a grid view. Tasks map directly to their deadlines.</p>
-                </div>
+            {/* Cron Jobs Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="bg-[#0a0a0a] rounded-[2.5rem] p-10 border border-white/5 hover:border-white/20 transition-colors shadow-2xl relative overflow-hidden group flex flex-col justify-between cursor-default">
+              <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center border border-purple-500/20 mb-6 group-hover:scale-110 transition-transform duration-500">
+                <Clock className="w-7 h-7 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-extrabold text-white mb-2">Automated Cron</h3>
+                <p className="text-zinc-400 font-medium leading-relaxed">Serverless Vercel Cron Jobs strictly query the database for daily due-date reminders.</p>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="md:col-span-2 bg-white dark:bg-zinc-950 rounded-[2.5rem] p-10 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-8">
-              <div className="flex-1">
+            {/* Infrastructure Row - Span 2 */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="md:col-span-2 bg-[#050505] rounded-[2.5rem] p-10 border border-white/10 hover:border-white/20 transition-all shadow-[inset_0_0_80px_rgba(255,255,255,0.02)] flex flex-col justify-center relative overflow-hidden">
+               <div className="absolute right-0 bottom-0 w-1/2 h-full bg-gradient-to-l from-white/[0.03] to-transparent pointer-events-none" />
+               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6 flex-wrap">
-                  <BadgeIcon icon={<Download />} text="1-Click CSV Export" color="green" />
                   <BadgeIcon icon={<Lock />} text="Clerk Auth" color="zinc" />
                   <BadgeIcon icon={<Database />} text="MongoDB" color="blue" />
+                  <BadgeIcon icon={<Zap />} text="Next.js App Router" color="teal" />
+                  <BadgeIcon icon={<Download />} text="CSV Export" color="green" />
                 </div>
-                <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mb-3">Enterprise-Grade Infrastructure.</h3>
-                <p className="text-zinc-600 dark:text-zinc-400 font-medium max-w-md">
-                  Built on Next.js App Router with secure Clerk authentication and a scalable MongoDB backend. Take your data with you anytime via direct CSV exports.
+                <h3 className="text-3xl font-extrabold text-white mb-3">Enterprise-Grade Architecture.</h3>
+                <p className="text-zinc-400 font-medium max-w-xl text-lg">
+                  Designed for speed, security, and scalability. Your data is isolated, protected by strict routing middleware, and accessible anywhere.
                 </p>
               </div>
             </motion.div>
@@ -165,13 +180,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-zinc-200 dark:border-zinc-800 py-10 flex flex-col md:flex-row items-center justify-between text-zinc-500 dark:text-zinc-400 text-sm font-medium">
-          <p>© {new Date().getFullYear()} TaskMind AI. Built for the modern web.</p>
-          <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Twitter</a>
-            <a href="https://github.com/khanlazyanas" className="hover:text-zinc-900 dark:hover:text-white transition-colors">GitHub</a>
-            <a href="https://portfolio-frontend-3qay.vercel.app" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Portfolio</a>
+        {/* ================= FOOTER ================= */}
+        <footer className="border-t border-white/10 py-12 flex flex-col md:flex-row items-center justify-between text-zinc-500 text-sm font-medium">
+          <p>© {new Date().getFullYear()} TaskMind AI. Built by Anas.</p>
+          <div className="flex gap-8 mt-6 md:mt-0">
+            <a href="https://github.com/khanlazyanas" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">
+               GitHub
+            </a>
+            <a href="https://portfolio-frontend-3qay.vercel.app" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">
+               Portfolio
+            </a>
           </div>
         </footer>
 
@@ -180,16 +198,17 @@ export default function LandingPage() {
   );
 }
 
-// Helper Component for the Tech Stack Badges
+// ================= HELPER COMPONENT =================
 function BadgeIcon({ icon, text, color }: { icon: React.ReactNode, text: string, color: string }) {
   const colorStyles: Record<string, string> = {
-    green: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50",
-    zinc: "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/50",
-    blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
+    green: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    zinc: "bg-white/5 text-zinc-300 border-white/10",
+    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    teal: "bg-teal-500/10 text-teal-400 border-teal-500/20",
   };
 
   return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${colorStyles[color]}`}>
+    <div className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-wide backdrop-blur-md ${colorStyles[color]}`}>
       <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{icon}</span>
       {text}
     </div>
