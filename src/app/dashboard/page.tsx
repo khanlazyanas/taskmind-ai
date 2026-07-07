@@ -10,7 +10,6 @@ import EditTaskModal from "@/components/EditTaskModal";
 import ChatAssistant from "@/components/ChatAssistant"; 
 import TaskAnalytics from "@/components/TaskAnalytics"; 
 import TaskCalendar from "@/components/TaskCalendar"; 
-// <-- NAYA: Push Notification Manager Import Kiya
 import PushNotificationManager from "@/components/PushNotificationManager"; 
 import { UserButton } from "@clerk/nextjs";
 
@@ -168,10 +167,10 @@ export default function Home() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH": return "bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-900/50";
-      case "MEDIUM": return "bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900/50";
-      case "LOW": return "bg-green-50 text-green-600 ring-1 ring-green-200 dark:bg-green-950/40 dark:text-green-400 dark:ring-green-900/50";
-      default: return "bg-zinc-50 text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:ring-zinc-700/50";
+      case "HIGH": return "bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20";
+      case "MEDIUM": return "bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20";
+      case "LOW": return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20";
+      default: return "bg-zinc-50 text-zinc-600 ring-1 ring-zinc-200 dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10";
     }
   };
 
@@ -187,34 +186,45 @@ export default function Home() {
     const formattedDate = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     if (status === "DONE") {
-      return { text: `Due: ${formattedDate}`, className: "text-zinc-400 dark:text-zinc-500" };
+      return { text: `Due: ${formattedDate}`, className: "text-zinc-400 dark:text-zinc-600" };
     }
 
     if (due < today) {
-      return { text: `Overdue: ${formattedDate}`, className: "text-red-600 dark:text-red-400 font-bold flex items-center gap-1 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-lg ring-1 ring-red-200/50 dark:ring-red-900/50", isOverdue: true };
+      return { text: `Overdue: ${formattedDate}`, className: "text-red-600 dark:text-red-400 font-bold flex items-center gap-1 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-md ring-1 ring-red-200/50 dark:ring-red-500/20", isOverdue: true };
     } else if (due.getTime() === today.getTime()) {
-      return { text: `Due Today`, className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-lg ring-1 ring-amber-200/50 dark:ring-amber-900/50" };
+      return { text: `Due Today`, className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md ring-1 ring-amber-200/50 dark:ring-amber-500/20" };
     }
 
     return { text: `Due: ${formattedDate}`, className: "text-zinc-500 dark:text-zinc-400 font-semibold" };
   };
 
   return (
-    <main className="min-h-screen bg-[#FAFAFA] dark:bg-zinc-950 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:16px_16px] text-zinc-950 dark:text-zinc-100 font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-blue-500/30 pb-20 transition-colors duration-300">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-10">
+    <main className="min-h-screen bg-[#fafafa] dark:bg-[#050505] text-zinc-900 dark:text-zinc-50 font-sans selection:bg-teal-500/30 overflow-x-hidden relative transition-colors duration-300 pb-20">
+      
+      {/* ================= ULTRA PREMIUM BACKGROUND EFFECTS ================= */}
+      <div className="absolute inset-0 z-0 pointer-events-none flex justify-center overflow-hidden hidden dark:flex">
+        <div className="absolute top-[-10%] w-[100%] max-w-[1200px] h-[50%] bg-gradient-to-b from-teal-500/10 via-blue-600/5 to-transparent blur-[120px] rounded-full mix-blend-screen" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
+      </div>
+
+      <div className="relative z-10 max-w-[1400px] mx-auto p-4 sm:p-6 md:p-10 space-y-8 md:space-y-10">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-white/50 dark:border-zinc-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all">
+        {/* ================= HEADER DASHBOARD ================= */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 dark:bg-[#0a0a0a]/60 backdrop-blur-2xl p-6 md:px-8 md:py-6 rounded-[2.5rem] border border-zinc-200 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
-              <div className="bg-zinc-950 dark:bg-zinc-800 p-2.5 rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/10">
-                <Bot className="w-6 h-6 text-white dark:text-blue-400" />
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 bg-teal-500/20 blur-md rounded-full dark:block hidden" />
+                <div className="bg-zinc-950 dark:bg-white/10 border border-transparent dark:border-white/20 p-2.5 rounded-xl shadow-lg relative z-10">
+                  <Bot className="w-6 h-6 text-white dark:text-teal-400" />
+                </div>
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">TaskMind</h1>
-              <Badge variant="secondary" className="bg-blue-50/80 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/50 font-bold rounded-full px-3 py-0.5 shadow-sm">
-                AI Beta
+              <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">TaskMind<span className="text-teal-500 dark:text-teal-400">.</span></h1>
+              <Badge variant="secondary" className="bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/20 font-bold rounded-full px-3 py-0.5 shadow-sm uppercase tracking-widest text-[10px]">
+                Workspace
               </Badge>
             </div>
-            <p className="text-zinc-500 dark:text-zinc-400 font-medium md:ml-[3.5rem] text-sm md:text-base">Intelligent workspace & automated workflow routing.</p>
+            <p className="text-zinc-500 dark:text-zinc-400 font-medium md:ml-[4.2rem] text-sm md:text-base">Intelligent environment & automated workflow routing.</p>
           </div>
           
           <div className="flex items-center gap-4 w-full md:w-auto">
@@ -222,49 +232,52 @@ export default function Home() {
               <CreateTaskModal onSuccess={fetchTasks} />
             </div>
             <ThemeToggle />
-            <div className="h-12 w-12 flex items-center justify-center bg-white dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-shadow">
+            <div className="h-12 w-12 flex items-center justify-center bg-white dark:bg-white/5 rounded-full border border-zinc-200 dark:border-white/10 shadow-sm hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
               <UserButton appearance={{ elements: { avatarBox: "w-9 h-9" } }} />
             </div>
           </div>
         </div>
 
-        {/* <-- NAYA: Push Notification Banner yahan add kiya hai --> */}
         <PushNotificationManager />
 
         {!isLoading && tasks.length > 0 && (
           <>
+            {/* ================= STATS CARDS ================= */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-sm flex items-center gap-4">
-                <div className="p-3 bg-zinc-100/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 rounded-2xl">
+              <div className="bg-white/70 dark:bg-[#0a0a0a]/60 backdrop-blur-xl rounded-3xl p-6 border border-zinc-200 dark:border-white/10 shadow-sm dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center gap-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-200/50 dark:bg-white/5 blur-[40px] rounded-full group-hover:bg-zinc-300/50 dark:group-hover:bg-white/10 transition-colors duration-500 pointer-events-none" />
+                <div className="p-3.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 rounded-2xl border border-transparent dark:border-white/10 relative z-10">
                   <ListTodo className="w-6 h-6" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Total Tasks</p>
-                  <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{totalTasks}</h3>
+                <div className="relative z-10">
+                  <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Total Tasks</p>
+                  <h3 className="text-3xl font-black text-zinc-900 dark:text-white leading-none">{totalTasks}</h3>
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-blue-50 dark:border-blue-900/30 shadow-sm flex items-center gap-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl">
+              <div className="bg-white/70 dark:bg-[#0a0a0a]/60 backdrop-blur-xl rounded-3xl p-6 border border-blue-100 dark:border-blue-500/20 shadow-sm dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center gap-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 dark:bg-blue-500/10 blur-[40px] rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-500/20 transition-colors duration-500 pointer-events-none" />
+                <div className="p-3.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl border border-transparent dark:border-blue-500/20 relative z-10">
                   <TrendingUp className="w-6 h-6" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">In Progress</p>
-                  <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{tasks.filter(t => t.status === "IN_PROGRESS").length}</h3>
+                <div className="relative z-10">
+                  <p className="text-[11px] font-bold text-blue-400/80 dark:text-blue-400/60 uppercase tracking-widest mb-1">In Progress</p>
+                  <h3 className="text-3xl font-black text-zinc-900 dark:text-white leading-none">{tasks.filter(t => t.status === "IN_PROGRESS").length}</h3>
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-green-50 dark:border-green-900/30 shadow-sm flex flex-col justify-center gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
-                    <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Completion</p>
+              <div className="bg-white/70 dark:bg-[#0a0a0a]/60 backdrop-blur-xl rounded-3xl p-6 border border-emerald-100 dark:border-teal-500/20 shadow-sm dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col justify-center gap-4 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 dark:bg-teal-500/10 blur-[40px] rounded-full group-hover:bg-emerald-200 dark:group-hover:bg-teal-500/20 transition-colors duration-500 pointer-events-none" />
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-teal-400" />
+                    <p className="text-[11px] font-bold text-emerald-600/80 dark:text-teal-400/60 uppercase tracking-widest">Completion</p>
                   </div>
-                  <span className="text-lg font-extrabold text-green-600 dark:text-green-400">{completionPercentage}%</span>
+                  <span className="text-xl font-black text-emerald-600 dark:text-teal-400">{completionPercentage}%</span>
                 </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-zinc-100 dark:bg-white/5 rounded-full h-2 overflow-hidden relative z-10 border border-transparent dark:border-white/5">
                   <div 
-                    className="bg-green-500 dark:bg-green-400 h-2 rounded-full transition-all duration-1000 ease-out" 
+                    className="bg-emerald-500 dark:bg-teal-400 h-2 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(20,184,166,0.5)]" 
                     style={{ width: `${completionPercentage}%` }}
                   />
                 </div>
@@ -276,46 +289,37 @@ export default function Home() {
         )}
 
         {!isLoading && tasks.length > 0 && (
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-zinc-900 p-2 pl-4 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md p-2 pl-5 rounded-full border border-zinc-200 dark:border-white/10 shadow-sm dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center gap-3 w-full md:w-1/3">
               <Search className="w-5 h-5 text-zinc-400 flex-shrink-0" />
               <input 
                 type="text" 
-                placeholder="Search tasks..." 
+                placeholder="Search database..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-none focus:outline-none text-sm font-medium placeholder:text-zinc-400 text-zinc-700 dark:text-zinc-200 h-10"
+                className="w-full bg-transparent border-none focus:outline-none text-sm font-medium placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-zinc-700 dark:text-zinc-200 h-10"
               />
             </div>
             
             <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar pr-2">
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl mr-2">
-                <button 
-                  onClick={() => setPriorityFilter("ALL")} 
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-zinc-900 shadow-sm text-zinc-800 dark:text-white"
-                >
-                  Board
-                </button>
-              </div>
-
               {["ALL", "HIGH", "MEDIUM", "LOW"].map((priority) => (
                 <button
                   key={priority}
                   onClick={() => setPriorityFilter(priority)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
                     priorityFilter === priority 
-                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md" 
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      ? "bg-zinc-900 dark:bg-white text-white dark:text-black border-transparent shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
+                      : "bg-transparent text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 border-transparent dark:hover:border-white/10"
                   }`}
                 >
-                  {priority === "ALL" ? "All" : `${priority}`}
+                  {priority === "ALL" ? "All Tasks" : `${priority}`}
                 </button>
               ))}
               
-              <div className="h-6 w-[1px] bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block"></div>
+              <div className="h-6 w-[1px] bg-zinc-200 dark:bg-white/10 mx-2 hidden md:block"></div>
               <button
                 onClick={exportTasksToCSV}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/50 shadow-sm"
+                className="flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/20 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" /> Export CSV
               </button>
@@ -324,27 +328,30 @@ export default function Home() {
         )}
 
         {isLoading ? (
-          <div className="flex flex-col justify-center items-center py-32 space-y-4 animate-in fade-in duration-700">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-400 drop-shadow-md" />
-            <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm animate-pulse">Syncing workspace...</p>
+          <div className="flex flex-col justify-center items-center py-40 space-y-6 animate-in fade-in duration-700">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 bg-teal-500/20 blur-xl rounded-full dark:block hidden animate-pulse" />
+              <Loader2 className="w-12 h-12 animate-spin text-teal-600 dark:text-teal-400 relative z-10" />
+            </div>
+            <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm tracking-widest uppercase animate-pulse">Syncing Secure Workspace...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             
-            {/* TODO Column */}
+            {/* ================= TODO COLUMN ================= */}
             <div 
-              className="flex flex-col gap-5 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 rounded-[2rem] border border-zinc-100/80 dark:border-zinc-800/80 shadow-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900 min-h-[300px]"
+              className="flex flex-col gap-5 bg-zinc-50/50 dark:bg-white/[0.02] p-5 rounded-[2rem] border border-zinc-200 dark:border-white/5 shadow-sm transition-colors hover:bg-zinc-100/50 dark:hover:bg-white/[0.04] min-h-[400px] backdrop-blur-xl"
               onDrop={(e) => handleDrop(e, "TODO")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-zinc-100 dark:border-zinc-800 pointer-events-none">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200/60 dark:border-zinc-700">
+              <div className="flex items-center justify-between pb-4 px-1 border-b border-zinc-200 dark:border-white/10 pointer-events-none">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-white dark:bg-white/5 rounded-xl shadow-sm border border-zinc-200 dark:border-white/10 backdrop-blur-md">
                     <LayoutGrid className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   </div>
                   <h2 className="text-sm font-extrabold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">To Do</h2>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-zinc-800 shadow-sm px-2.5 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">{todoTasks.length}</Badge>
+                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-white/5 shadow-sm px-3 dark:text-zinc-300 border-zinc-200 dark:border-white/10">{todoTasks.length}</Badge>
               </div>
               
               <div className="flex flex-col gap-4">
@@ -355,13 +362,13 @@ export default function Home() {
                       key={task._id} 
                       draggable 
                       onDragStart={(e) => handleDragStart(e, task._id)}
-                      className="group bg-white dark:bg-zinc-800/80 rounded-3xl border-0 ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgb(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                      className="group bg-white dark:bg-[#0a0a0a]/80 backdrop-blur-md rounded-[1.5rem] border-0 ring-1 ring-zinc-200 dark:ring-white/10 shadow-sm hover:shadow-xl hover:ring-zinc-300 dark:hover:ring-white/30 dark:hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                     >
                       <CardContent className="p-6 space-y-5 pointer-events-none">
                         <div className="flex justify-between items-start pointer-events-auto">
                           <div className="flex gap-2 flex-wrap">
                             {task.tags.map((tag, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-200/80 dark:border-zinc-700 font-bold rounded-lg px-2.5 py-1">
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-white/10 font-bold rounded-md px-2.5 py-1 text-[10px] uppercase tracking-wider">
                                 {tag}
                               </Badge>
                             ))}
@@ -375,17 +382,17 @@ export default function Home() {
                               initialDueDate={task.dueDate}
                               onSuccess={fetchTasks} 
                             />
-                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 dark:text-blue-400 hover:text-white bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-600 dark:hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden" title="Start Task">
+                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 dark:text-blue-400 hover:text-white bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-600 dark:hover:bg-blue-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-blue-500/20 lg:hidden" title="Start Task">
                               <ArrowRight className="w-4 h-4" />
                             </button>
-                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-900/40 hover:bg-red-500 dark:hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-500 dark:hover:bg-red-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-red-500/20" title="Delete Task">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
                         
                         <div className="pointer-events-auto">
-                          <h3 className="text-[1.1rem] font-bold text-zinc-900 dark:text-zinc-100 leading-snug mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-900 dark:text-white leading-snug mb-2 group-hover:text-blue-600 dark:group-hover:text-teal-400 transition-colors line-clamp-2">
                             {task.title}
                           </h3>
                           <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-medium">
@@ -393,17 +400,17 @@ export default function Home() {
                           </p>
                           
                           {task.subtasks && task.subtasks.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                              <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <Bot className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" /> AI Action Plan
+                            <div className="mt-5 space-y-2.5">
+                              <h4 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <Bot className="w-3.5 h-3.5 text-blue-500 dark:text-teal-400" /> AI Action Plan
                               </h4>
                               {task.subtasks.map((sub, idx) => (
-                                <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                <div key={idx} className="flex items-start gap-3 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
                                   <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
-                                    ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-400 bg-white dark:bg-zinc-800'}`}>
+                                    ${sub.completed ? 'bg-blue-500 dark:bg-teal-500 border-blue-500 dark:border-teal-500 text-white' : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-teal-400 bg-white dark:bg-white/5'}`}>
                                     {sub.completed && <CheckCircle className="w-3 h-3" />}
                                   </div>
-                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-600 dark:text-zinc-300'}`}>
+                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 dark:text-zinc-600 line-through' : 'text-zinc-700 dark:text-zinc-300'}`}>
                                     {sub.title}
                                   </span>
                                 </div>
@@ -412,19 +419,18 @@ export default function Home() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 dark:border-zinc-700/80 mt-2 pointer-events-auto">
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-white/10 mt-2 pointer-events-auto">
                           <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-black ${getPriorityColor(task.priority)}`}>
                               {task.priority.charAt(0)}
                             </div>
-                            
                             <span className={`text-xs flex items-center gap-1.5 ${dateDetails.className}`}>
                               {dateDetails.isOverdue ? <AlertCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400 animate-pulse" /> : <Clock className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />}
                               {dateDetails.text || new Date(task.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[10px] uppercase font-extrabold tracking-wide text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-full ring-1 ring-amber-200/50 dark:ring-amber-900/50 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <Sparkles className="w-3 h-3" /> AI Tagged
+                          <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1 rounded-md ring-1 ring-teal-200/50 dark:ring-teal-500/20 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <Sparkles className="w-3 h-3" /> AI
                           </div>
                         </div>
                       </CardContent>
@@ -434,23 +440,25 @@ export default function Home() {
               </div>
             </div>
 
-            {/* IN PROGRESS Column */}
+            {/* ================= IN PROGRESS COLUMN ================= */}
             <div 
-              className="flex flex-col gap-5 bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-[2rem] border border-blue-100/50 dark:border-blue-900/30 shadow-sm transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/20 min-h-[300px]"
+              className="flex flex-col gap-5 bg-blue-50/40 dark:bg-blue-500/[0.02] p-5 rounded-[2rem] border border-blue-100/60 dark:border-blue-500/10 shadow-sm transition-colors hover:bg-blue-50/60 dark:hover:bg-blue-500/[0.04] min-h-[400px] backdrop-blur-xl relative overflow-hidden"
               onDrop={(e) => handleDrop(e, "IN_PROGRESS")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-blue-100 dark:border-blue-900/50 pointer-events-none">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-blue-200/60 dark:border-blue-800/50 flex items-center justify-center">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full pointer-events-none" />
+              
+              <div className="flex items-center justify-between pb-4 px-1 border-b border-blue-100 dark:border-blue-500/20 pointer-events-none relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-white dark:bg-blue-500/10 rounded-xl shadow-sm border border-blue-200/60 dark:border-blue-500/20 flex items-center justify-center backdrop-blur-md">
                     <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
                   </div>
                   <h2 className="text-sm font-extrabold uppercase tracking-widest text-blue-700 dark:text-blue-400">In Progress</h2>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 shadow-sm px-2.5">{inProgressTasks.length}</Badge>
+                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 shadow-sm px-3">{inProgressTasks.length}</Badge>
               </div>
               
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 relative z-10">
                 {inProgressTasks.map((task) => {
                   const dateDetails = getDueDateDetails(task.dueDate, task.status);
                   return (
@@ -458,13 +466,13 @@ export default function Home() {
                       key={task._id}
                       draggable 
                       onDragStart={(e) => handleDragStart(e, task._id)}
-                      className="group bg-white dark:bg-zinc-800/80 rounded-3xl border-0 ring-1 ring-blue-200/60 dark:ring-blue-800/50 shadow-[0_2px_10px_rgb(59,130,246,0.04)] hover:shadow-[0_20px_40px_rgb(59,130,246,0.12)] dark:hover:shadow-[0_20px_40px_rgb(59,130,246,0.2)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                      className="group bg-white dark:bg-[#0a0a0a]/90 backdrop-blur-md rounded-[1.5rem] border-0 ring-1 ring-blue-200/60 dark:ring-blue-500/30 shadow-sm hover:shadow-xl hover:ring-blue-300 dark:hover:ring-blue-500/50 dark:hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                     >
                       <CardContent className="p-6 space-y-5 pointer-events-none">
                         <div className="flex justify-between items-start pointer-events-auto">
                           <div className="flex gap-2 flex-wrap">
                             {task.tags.map((tag, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-200/80 dark:border-zinc-700 font-bold rounded-lg px-2.5 py-1">
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-white/10 font-bold rounded-md px-2.5 py-1 text-[10px] uppercase tracking-wider">
                                 {tag}
                               </Badge>
                             ))}
@@ -478,20 +486,20 @@ export default function Home() {
                               initialDueDate={task.dueDate}
                               onSuccess={fetchTasks} 
                             />
-                            <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 dark:text-zinc-400 hover:text-white bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-800 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                            <button onClick={() => updateTaskStatus(task._id, "TODO")} className="text-zinc-500 dark:text-zinc-400 hover:text-white bg-zinc-100 dark:bg-white/10 hover:bg-zinc-800 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-white/20 lg:hidden">
                               <ArrowLeft className="w-4 h-4" />
                             </button>
-                            <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-green-600 dark:text-green-400 hover:text-white bg-green-50 dark:bg-green-900/40 hover:bg-green-500 dark:hover:bg-green-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                            <button onClick={() => updateTaskStatus(task._id, "DONE")} className="text-emerald-600 dark:text-teal-400 hover:text-white bg-emerald-50 dark:bg-teal-500/10 hover:bg-emerald-500 dark:hover:bg-teal-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-teal-500/20 lg:hidden">
                               <CheckCircle className="w-4 h-4" />
                             </button>
-                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-900/40 hover:bg-red-500 dark:hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-500 dark:hover:bg-red-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-red-500/20" title="Delete Task">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
                         
                         <div className="pointer-events-auto">
-                          <h3 className="text-[1.1rem] font-bold text-zinc-900 dark:text-zinc-100 leading-snug mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-900 dark:text-white leading-snug mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                             {task.title}
                           </h3>
                           <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-medium">
@@ -499,17 +507,17 @@ export default function Home() {
                           </p>
 
                           {task.subtasks && task.subtasks.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                              <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <div className="mt-5 space-y-2.5">
+                              <h4 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                 <Bot className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" /> AI Action Plan
                               </h4>
                               {task.subtasks.map((sub, idx) => (
-                                <div key={idx} className="flex items-start gap-2.5 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
+                                <div key={idx} className="flex items-start gap-3 group/subtask cursor-pointer" onClick={() => toggleSubtask(task._id, idx)}>
                                   <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-[4px] border transition-all duration-200 flex items-center justify-center
-                                    ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-400 bg-white dark:bg-zinc-800'}`}>
+                                    ${sub.completed ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-400 bg-white dark:bg-white/5'}`}>
                                     {sub.completed && <CheckCircle className="w-3 h-3" />}
                                   </div>
-                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-600 dark:text-zinc-300'}`}>
+                                  <span className={`text-[13px] font-medium leading-tight transition-all duration-200 ${sub.completed ? 'text-zinc-400 dark:text-zinc-600 line-through' : 'text-zinc-700 dark:text-zinc-300'}`}>
                                     {sub.title}
                                   </span>
                                 </div>
@@ -518,9 +526,9 @@ export default function Home() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 dark:border-zinc-700/80 mt-2 pointer-events-auto">
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-white/10 mt-2 pointer-events-auto">
                           <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-extrabold ${getPriorityColor(task.priority)}`}>
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-black ${getPriorityColor(task.priority)}`}>
                               {task.priority.charAt(0)}
                             </div>
                             
@@ -537,23 +545,25 @@ export default function Home() {
               </div>
             </div>
 
-            {/* DONE Column */}
+            {/* ================= DONE COLUMN ================= */}
             <div 
-              className="flex flex-col gap-5 bg-green-50/30 dark:bg-green-900/10 p-4 rounded-[2rem] border border-green-100/50 dark:border-green-900/30 shadow-sm transition-colors hover:bg-green-50/50 dark:hover:bg-green-900/20 min-h-[300px]"
+              className="flex flex-col gap-5 bg-emerald-50/40 dark:bg-teal-500/[0.02] p-5 rounded-[2rem] border border-emerald-100/60 dark:border-teal-500/10 shadow-sm transition-colors hover:bg-emerald-50/60 dark:hover:bg-teal-500/[0.04] min-h-[400px] backdrop-blur-xl relative overflow-hidden"
               onDrop={(e) => handleDrop(e, "DONE")}
               onDragOver={handleDragOver}
             >
-              <div className="flex items-center justify-between pb-3 px-2 border-b-2 border-green-100 dark:border-green-900/50 pointer-events-none">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-green-200/60 dark:border-green-800/50 flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 blur-[80px] rounded-full pointer-events-none" />
+
+              <div className="flex items-center justify-between pb-4 px-1 border-b border-emerald-100 dark:border-teal-500/20 pointer-events-none relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-white dark:bg-teal-500/10 rounded-xl shadow-sm border border-emerald-200/60 dark:border-teal-500/20 flex items-center justify-center backdrop-blur-md">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-teal-400" />
                   </div>
-                  <h2 className="text-sm font-extrabold uppercase tracking-widest text-green-700 dark:text-green-400">Completed</h2>
+                  <h2 className="text-sm font-extrabold uppercase tracking-widest text-emerald-700 dark:text-teal-400">Completed</h2>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-zinc-800 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 shadow-sm px-2.5">{doneTasks.length}</Badge>
+                <Badge variant="outline" className="text-xs font-mono font-bold rounded-full bg-white dark:bg-teal-500/10 text-emerald-700 dark:text-teal-400 border-emerald-200 dark:border-teal-500/30 shadow-sm px-3">{doneTasks.length}</Badge>
               </div>
               
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 relative z-10">
                 {doneTasks.map((task) => {
                   const dateDetails = getDueDateDetails(task.dueDate, task.status);
                   return (
@@ -561,13 +571,13 @@ export default function Home() {
                       key={task._id}
                       draggable 
                       onDragStart={(e) => handleDragStart(e, task._id)}
-                      className="group bg-white/60 dark:bg-zinc-800/40 rounded-3xl border-0 ring-1 ring-green-200/50 dark:ring-green-900/30 shadow-sm opacity-80 hover:opacity-100 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
+                      className="group bg-white/60 dark:bg-[#0a0a0a]/50 backdrop-blur-md rounded-[1.5rem] border-0 ring-1 ring-emerald-200/50 dark:ring-teal-500/20 shadow-sm opacity-70 hover:opacity-100 hover:bg-white dark:hover:bg-[#0a0a0a]/90 hover:shadow-xl hover:ring-emerald-300 dark:hover:ring-teal-500/40 dark:hover:shadow-[0_0_30px_rgba(20,184,166,0.1)] hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing animate-in fade-in slide-in-from-bottom-4"
                     >
                       <CardContent className="p-6 space-y-5 pointer-events-none">
                         <div className="flex justify-between items-start pointer-events-auto">
                           <div className="flex gap-2 flex-wrap opacity-100 lg:opacity-60 lg:group-hover:opacity-100 transition-opacity">
                             {task.tags.map((tag, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200/80 dark:border-zinc-700 font-bold rounded-lg px-2.5 py-1">
+                              <Badge key={idx} variant="outline" className="bg-zinc-50 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 border-zinc-200/80 dark:border-white/10 font-bold rounded-md px-2.5 py-1 text-[10px] uppercase tracking-wider">
                                 {tag}
                               </Badge>
                             ))}
@@ -581,31 +591,31 @@ export default function Home() {
                               initialDueDate={task.dueDate}
                               onSuccess={fetchTasks} 
                             />
-                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 dark:text-blue-400 hover:text-white bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-500 dark:hover:bg-blue-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm lg:hidden">
+                            <button onClick={() => updateTaskStatus(task._id, "IN_PROGRESS")} className="text-blue-500 dark:text-blue-400 hover:text-white bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-500 dark:hover:bg-blue-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-blue-500/20 lg:hidden">
                               <ArrowLeft className="w-4 h-4" />
                             </button>
-                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-900/40 hover:bg-red-500 dark:hover:bg-red-500 p-2.5 rounded-xl transition-all duration-300 shadow-sm" title="Delete Task">
+                            <button onClick={() => deleteTask(task._id)} className="text-red-500 dark:text-red-400 hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-500 dark:hover:bg-red-500 p-2 rounded-lg transition-all duration-300 shadow-sm border border-transparent dark:border-red-500/20" title="Delete Task">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
                         
                         <div className="pointer-events-auto">
-                          <h3 className="text-[1.1rem] font-bold text-zinc-500 dark:text-zinc-400 line-through leading-snug mb-2 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
+                          <h3 className="text-[1.1rem] font-bold text-zinc-500 dark:text-zinc-500 line-through leading-snug mb-2 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
                             {task.title}
                           </h3>
 
                           {task.subtasks && task.subtasks.length > 0 && (
-                            <div className="mt-4 space-y-2 opacity-70">
-                              <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <Bot className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" /> Action Plan
+                            <div className="mt-5 space-y-2.5 opacity-60">
+                              <h4 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <Bot className="w-3.5 h-3.5" /> Action Plan
                               </h4>
                               {task.subtasks.map((sub, idx) => (
-                                <div key={idx} className="flex items-start gap-2 group/subtask">
-                                  <div className="mt-0.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex-shrink-0">
-                                    <CheckCircle className="w-2.5 h-2.5" />
+                                <div key={idx} className="flex items-start gap-3 group/subtask">
+                                  <div className="mt-0.5 flex items-center justify-center w-4 h-4 rounded-[4px] bg-emerald-100 dark:bg-teal-500/20 text-emerald-600 dark:text-teal-400 flex-shrink-0 border border-emerald-200 dark:border-teal-500/30">
+                                    <CheckCircle className="w-3 h-3" />
                                   </div>
-                                  <span className="text-[13px] font-medium text-zinc-400 dark:text-zinc-500 line-through leading-tight">
+                                  <span className="text-[13px] font-medium text-zinc-400 dark:text-zinc-600 line-through leading-tight">
                                     {sub.title}
                                   </span>
                                 </div>
@@ -614,10 +624,10 @@ export default function Home() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 dark:border-zinc-700/80 mt-2 pointer-events-auto">
+                        <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-white/5 mt-2 pointer-events-auto">
                           <div className="flex items-center gap-3">
                             <span className={`text-xs flex items-center gap-1.5 ${dateDetails.className}`}>
-                              <Clock className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                              <Clock className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600" />
                               {dateDetails.text || new Date(task.createdAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -635,26 +645,26 @@ export default function Home() {
         {!isLoading && tasks.length > 0 && (
           <div className="pt-6">
             <div className="flex justify-end mb-4 px-2">
-              <div className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex items-center gap-1 border border-zinc-200/40 dark:border-zinc-700/50 shadow-inner">
+              <div className="bg-white/50 dark:bg-[#0a0a0a]/60 backdrop-blur-md p-1.5 rounded-full flex items-center gap-1 border border-zinc-200 dark:border-white/10 shadow-sm">
                 <button 
                   onClick={() => setCurrentView("KANBAN")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all ${
                     currentView === "KANBAN" 
-                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-sm" 
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                      ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md" 
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5"
                   }`}
                 >
-                  <Kanban className="w-3.5 h-3.5" /> Kanban
+                  <Kanban className="w-4 h-4" /> Kanban Flow
                 </button>
                 <button 
                   onClick={() => setCurrentView("CALENDAR")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all ${
                     currentView === "CALENDAR" 
-                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-sm" 
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                      ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md" 
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5"
                   }`}
                 >
-                  <CalendarIcon className="w-3.5 h-3.5" /> Calendar View
+                  <CalendarIcon className="w-4 h-4" /> Grid View
                 </button>
               </div>
             </div>
